@@ -307,6 +307,37 @@ fn validate_host(host: String) -> Result<(), String> {
     Host::new(&host).map(|_| ())
 }
 
+#[derive(Debug, Deserialize)]
+pub struct TargetData {
+    pub host: String,
+    pub remarks: String,
+}
+
+#[tauri::command]
+async fn save_targets(targets: Vec<TargetData>) -> Result<(), String> {
+    // 実行時パス (Executable path)
+    let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
+    let def_path = dir.join("ExPing.def");
+
+    let mut file = File::create(def_path).map_err(|e| e.to_string())?;
+    for target in targets {
+        if target.remarks.is_empty() {
+            writeln!(file, "{}", target.host).map_err(|e| e.to_string())?;
+        } else {
+            writeln!(file, "{} #{}", target.host, target.remarks).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn save_text_file(path: String, content: String) -> Result<(), String> {
+    let mut file = File::create(path).map_err(|e| e.to_string())?;
+    file.write_all(content.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -316,7 +347,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ping_target,
             traceroute_target,
-            validate_host
+            validate_host,
+            save_targets,
+            save_text_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
