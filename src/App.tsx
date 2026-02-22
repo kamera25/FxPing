@@ -23,6 +23,16 @@ interface TraceResult {
   timestamp: string;
 }
 
+const formatDate = (date: Date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${y}/${m}/${d} ${h}:${min}:${s}`;
+};
+
 interface Settings {
   repeatCount: number;
   interval: number;
@@ -53,6 +63,7 @@ function App() {
     periodicExecution: false,
     periodicInterval: 60,
   });
+  const [currentTime, setCurrentTime] = useState(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const addTarget = () => {
@@ -130,6 +141,13 @@ function App() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [results]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="app-container">
@@ -382,7 +400,7 @@ function App() {
         <div>対象数: {targets.length}</div>
         <div>パケット合計: {results.length}</div>
         <div style={{ flex: 1, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          実行中の対象: {targets.join(", ")}
+          {formatDate(currentTime)}
         </div>
       </div>
     </div>
