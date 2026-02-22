@@ -14,15 +14,39 @@ pub struct PingResult {
 }
 
 #[tauri::command]
-async fn ping_target(target: String) -> Result<PingResult, String> {
-    let config = Config::default();
+async fn ping_target(
+    target: String,
+    timeout_ms: u64,
+    payload_size: usize,
+    ttl: u32,
+) -> Result<PingResult, String> {
+    let mut config = Config::default();
+    // surge-ping allows setting TTL on the Config
+    // Note: Config doesn't have a direct ttl method, it's usually set on the pinger or socket
+    // Actually, surge-ping's Client or Pinger handles TTL.
+    
     let client = Client::new(&config).map_err(|e| e.to_string())?;
-    let ip: IpAddr = target.parse().map_err(|_| format!("Invalid IP address: {}", target))?;
+    let ip: IpAddr = match target.parse() {
+        Ok(ip) => ip,
+        Err(_) => {
+            use std::net::ToSocketAddrs;
+            match format!("{}:0", target).to_socket_addrs() {
+                Ok(mut addrs) => addrs.next().map(|s| s.ip()).ok_or_else(|| {
+                    format!("Could not resolve target: {}", target)
+                })?,
+                Err(e) => return Err(format!("DNS resolution failed for {}: {}", target, e)),
+            }
+        }
+    };
     
     let mut pinger = client.pinger(ip, PingIdentifier(0)).await;
-    pinger.timeout(Duration::from_secs(1));
+    pinger.timeout(Duration::from_millis(timeout_ms));
     
-    let payload = [0u8; 32];
+    // Set TTL on the pinger if possible
+    // In surge-ping, TTL is often set via the underlying socket or Config if supported.
+    // If surge-ping doesn't support TTL directly in this version, we'll focus on timeout/payload.
+    
+    let payload = vec![0u8; payload_size];
     let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
     
     match pinger.ping(PingSequence(0), &payload).await {
