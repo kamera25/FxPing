@@ -57,45 +57,45 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <div style={{ fontWeight: 'bold', letterSpacing: '2px' }}>EX-PING</div>
+        <div style={{ fontWeight: 'bold', letterSpacing: '2px' }}>EX-PING - 継続PINGツール</div>
       </header>
 
       <div className="tab-bar">
-        <div className="tab active">Ping Statistics</div>
-        <div className="tab">Environment</div>
-        <div className="tab">TraceRoute</div>
+        <div className="tab active">Ping統計</div>
+        <div className="tab">環境設定</div>
+        <div className="tab">経路追跡</div>
       </div>
 
       <div className="toolbar">
         <div className="input-group">
           <input
             type="text"
-            placeholder="IP Address..."
+            placeholder="IPアドレスまたはホスト名..."
             value={newTarget}
             onChange={(e) => setNewTarget(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTarget()}
           />
-          <button onClick={addTarget}>Add Target</button>
+          <button onClick={addTarget}>対象を追加</button>
         </div>
         <button
           onClick={() => setIsPinging(!isPinging)}
           style={{ background: isPinging ? '#cf6679' : '#4caf50' }}
         >
-          {isPinging ? "Stop Pinging" : "Start Pinging"}
+          {isPinging ? "停止" : "開始"}
         </button>
-        <button onClick={() => setResults([])}>Clear Results</button>
+        <button onClick={() => setResults([])}>履歴クリア</button>
       </div>
 
       <div className="table-container" ref={scrollRef}>
         <table>
           <thead>
             <tr>
-              <th style={{ width: '80px' }}>Status</th>
-              <th style={{ width: '180px' }}>Timestamp</th>
-              <th>Target</th>
-              <th>IP Address</th>
-              <th>Response Time</th>
-              <th>Details</th>
+              <th style={{ width: '80px' }}>ステータス</th>
+              <th style={{ width: '180px' }}>日時</th>
+              <th>対象</th>
+              <th>IPアドレス</th>
+              <th>応答時間</th>
+              <th>詳細</th>
             </tr>
           </thead>
           <tbody>
@@ -116,9 +116,9 @@ function App() {
       </div>
 
       <div className="stats-bar">
-        <div>Targets: {targets.length}</div>
-        <div>Total Packets: {results.length}</div>
-        <div>Active Targets: {targets.join(", ")}</div>
+        <div>対象数: {targets.length}</div>
+        <div>パケット合計: {results.length}</div>
+        <div>実行中の対象: {targets.join(", ")}</div>
       </div>
     </div>
   );
