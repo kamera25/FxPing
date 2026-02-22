@@ -3,6 +3,72 @@ use surge_ping::{Client, Config, PingIdentifier, PingSequence, IcmpPacket};
 use std::net::IpAddr;
 use std::time::Duration;
 use chrono::Local;
+use std::str::FromStr;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Host(String);
+
+impl Host {
+    pub fn new(s: &str) -> Result<Self, String> {
+        let s = s.trim();
+        if s.is_empty() {
+            return Err("Host cannot be empty".to_string());
+        }
+
+        // 1. Check if it's "localhost"
+        if s == "localhost" {
+            return Ok(Host(s.to_string()));
+        }
+
+        // 2. Check if it's an IP address (IPv4 or IPv6)
+        if IpAddr::from_str(s).is_ok() {
+            return Ok(Host(s.to_string()));
+        }
+
+        // 3. Check if it's an FQDN
+        // Simple FQDN validation: 
+        // - At least one dot
+        // - No consecutive dots
+        // - Only alphanumeric, dots, and hyphens (hyphens not at start/end of parts)
+        if s.contains('.') {
+            let parts: Vec<&str> = s.split('.').collect();
+            if parts.len() < 2 {
+                return Err(format!("Invalid FQDN: {}", s));
+            }
+            for part in parts {
+                if part.is_empty() {
+                    return Err(format!("Invalid FQDN (consecutive dots): {}", s));
+                }
+                if part.starts_with('-') || part.ends_with('-') {
+                    return Err(format!("Invalid FQDN (hyphen at start/end): {}", s));
+                }
+                if !part.chars().all(|c| c.is_alphanumeric() || c == '-') {
+                    return Err(format!("Invalid characters in FQDN: {}", s));
+                }
+            }
+            return Ok(Host(s.to_string()));
+        }
+
+        Err(format!("Invalid target: {}. Must be IPv4, IPv6, FQDN, or localhost", s))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl FromStr for Host {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s)
+    }
+}
+
+impl ToString for Host {
+    fn to_string(&self) -> String {
+        self.0.clone()
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PingResult {
@@ -37,6 +103,8 @@ async fn ping_target(
     payload_size: usize,
     ttl: u32,
 ) -> Result<PingResult, String> {
+    let host = Host::new(&target)?;
+    let target_str = host.to_string();
     let _ttl = ttl;
     let config = Config::default();
     // surge-ping allows setting TTL on the Config
@@ -44,15 +112,15 @@ async fn ping_target(
     // Actually, surge-ping's Client or Pinger handles TTL.
     
     let client = Client::new(&config).map_err(|e| e.to_string())?;
-    let ip: IpAddr = match target.parse() {
+    let ip: IpAddr = match target_str.parse() {
         Ok(ip) => ip,
         Err(_) => {
             use std::net::ToSocketAddrs;
-            match format!("{}:0", target).to_socket_addrs() {
+            match format!("{}:0", target_str).to_socket_addrs() {
                 Ok(mut addrs) => addrs.next().map(|s| s.ip()).ok_or_else(|| {
-                    format!("Could not resolve target: {}", target)
+                    format!("Could not resolve target: {}", target_str)
                 })?,
-                Err(e) => return Err(format!("DNS resolution failed for {}: {}", target, e)),
+                Err(e) => return Err(format!("DNS resolution failed for {}: {}", target_str, e)),
             }
         }
     };
@@ -104,19 +172,21 @@ async fn traceroute_target(
     max_hops: u32,
     protocol: String,
 ) -> Result<TraceResult, String> {
+    let host = Host::new(&target)?;
+    let target_str = host.to_string();
     let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
     let config = Config::default();
     let client = Client::new(&config).map_err(|e| e.to_string())?;
     
-    let ip: IpAddr = match target.parse() {
+    let ip: IpAddr = match target_str.parse() {
         Ok(ip) => ip,
         Err(_) => {
             use std::net::ToSocketAddrs;
-            match format!("{}:0", target).to_socket_addrs() {
+            match format!("{}:0", target_str).to_socket_addrs() {
                 Ok(mut addrs) => addrs.next().map(|s| s.ip()).ok_or_else(|| {
-                    format!("Could not resolve target: {}", target)
+                    format!("Could not resolve target: {}", target_str)
                 })?,
-                Err(e) => return Err(format!("DNS resolution failed for {}: {}", target, e)),
+                Err(e) => return Err(format!("DNS resolution failed for {}: {}", target_str, e)),
             }
         }
     };
@@ -229,11 +299,16 @@ async fn traceroute_target(
     })
 }
 
+#[tauri::command]
+fn validate_host(host: String) -> Result<(), String> {
+    Host::new(&host).map(|_| ())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![ping_target, traceroute_target])
+        .invoke_handler(tauri::generate_handler![ping_target, traceroute_target, validate_host])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

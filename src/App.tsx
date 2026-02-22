@@ -104,22 +104,41 @@ function App() {
   const [settingsTab, setSettingsTab] = useState("general");
   const [showExPingInput, setShowExPingInput] = useState(false);
   const [exPingText, setExPingText] = useState("");
+  const [isInputError, setIsInputError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const addTarget = () => {
-    if (newTarget && !targets.some(t => t.host === newTarget)) {
-      setTargets([...targets, { host: newTarget, remarks: newRemarks }]);
-      setNewTarget("");
-      setNewRemarks("");
+  const triggerShake = () => {
+    setIsInputError(true);
+    setTimeout(() => setIsInputError(false), 500);
+  };
+
+  const addTarget = async () => {
+    if (!newTarget) {
+      triggerShake();
+      return;
+    }
+
+    try {
+      await invoke("validate_host", { host: newTarget });
+      if (!targets.some(t => t.host === newTarget)) {
+        setTargets([...targets, { host: newTarget, remarks: newRemarks }]);
+        setNewTarget("");
+        setNewRemarks("");
+      }
+    } catch (e) {
+      triggerShake();
+      console.error(`Invalid target: ${e}`);
     }
   };
 
-  const handleExPingApply = () => {
+  const handleExPingApply = async () => {
     const lines = exPingText.split('\n');
     const newTargets: Target[] = [];
-    lines.forEach(line => {
+    const invalidHosts: string[] = [];
+
+    for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed) return;
+      if (!trimmed) continue;
 
       let host = trimmed;
       let remarks = "";
@@ -131,9 +150,18 @@ function App() {
       }
 
       if (host) {
-        newTargets.push({ host, remarks });
+        try {
+          await invoke("validate_host", { host });
+          newTargets.push({ host, remarks });
+        } catch (e) {
+          invalidHosts.push(`${host} (${e})`);
+        }
       }
-    });
+    }
+
+    if (invalidHosts.length > 0) {
+      alert(`The following targets were skipped due to validation errors:\n${invalidHosts.join('\n')}`);
+    }
 
     if (newTargets.length > 0) {
       setTargets(newTargets);
@@ -443,11 +471,12 @@ function App() {
 
         {!showSettings && activeTab === 'targets' && (
           <div className="target-list">
-            <div className="toolbar" style={{ margin: '0 0 16px 0', borderRadius: '4px' }}>
+            <div className={`toolbar ${isInputError ? 'shake-animation' : ''}`} style={{ margin: '0 0 16px 0', borderRadius: '4px' }}>
               <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
+                    className={isInputError ? 'input-error' : ''}
                     style={{ flex: 2 }}
                     placeholder="IPアドレスまたはホスト名..."
                     value={newTarget}
