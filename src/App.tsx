@@ -102,6 +102,8 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
+  const [showExPingInput, setShowExPingInput] = useState(false);
+  const [exPingText, setExPingText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const addTarget = () => {
@@ -109,6 +111,58 @@ function App() {
       setTargets([...targets, { host: newTarget, remarks: newRemarks }]);
       setNewTarget("");
       setNewRemarks("");
+    }
+  };
+
+  const handleExPingApply = () => {
+    const lines = exPingText.split('\n');
+    const newTargets: Target[] = [];
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      let host = trimmed;
+      let remarks = "";
+
+      if (trimmed.includes("#")) {
+        const parts = trimmed.split("#");
+        host = parts[0].trim();
+        remarks = parts[1].trim();
+      }
+
+      if (host) {
+        newTargets.push({ host, remarks });
+      }
+    });
+
+    if (newTargets.length > 0) {
+      setTargets(newTargets);
+      setShowExPingInput(false);
+      setExPingText("");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+
+    // Handle file drop
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result;
+        if (typeof content === 'string') {
+          setExPingText(content);
+        }
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    // Handle text drop
+    const text = e.dataTransfer.getData("text");
+    if (text) {
+      setExPingText(text);
     }
   };
 
@@ -423,6 +477,52 @@ function App() {
                 </div>
               </div>
             ))}
+
+            <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+              {!showExPingInput ? (
+                <button
+                  className="btn-full"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.2)' }}
+                  onClick={() => setShowExPingInput(true)}
+                >
+                  ExPing形式で定義…
+                </button>
+              ) : (
+                <div className="exping-input-area">
+                  <div style={{ marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>
+                    ExPing形式で入力（例: 8.8.8.8 #google dns）
+                  </div>
+                  <textarea
+                    style={{
+                      width: '100%',
+                      height: '120px',
+                      background: 'rgba(0,0,0,0.2)',
+                      color: 'white',
+                      border: '1px solid var(--primary)',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      fontSize: '13px',
+                      fontFamily: 'monospace',
+                      resize: 'vertical'
+                    }}
+                    placeholder="8.8.8.8 #google dns 1&#10;8.8.4.4 #google dns 2"
+                    value={exPingText}
+                    onChange={(e) => setExPingText(e.target.value)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button style={{ flex: 1 }} onClick={handleExPingApply}>適応</button>
+                    <button
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.1)' }}
+                      onClick={() => { setShowExPingInput(false); setExPingText(""); }}
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
