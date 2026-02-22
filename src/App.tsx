@@ -8,6 +8,12 @@ interface PingResult {
   time_ms: number | null;
   status: string;
   timestamp: string;
+  remarks: string;
+}
+
+interface Target {
+  host: string;
+  remarks: string;
 }
 
 interface TraceHop {
@@ -53,12 +59,23 @@ interface Settings {
   repeatOrder: 'sequential' | 'robin';
   periodicExecution: boolean;
   periodicInterval: number;
+  hideOnMinimize: boolean;
+  saveSettingsOnExit: boolean;
+  saveAsCsv: boolean;
+  autoDeleteResults: boolean;
+  maxResults: number;
+  flashTrayIcon: boolean;
+  prohibitFragmentation: boolean;
 }
 
 function App() {
   const [activeTab, setActiveTab] = useState("results");
-  const [targets, setTargets] = useState<string[]>(["127.0.0.1", "8.8.8.8"]);
+  const [targets, setTargets] = useState<Target[]>([
+    { host: "127.0.0.1", remarks: "ローカルホスト" },
+    { host: "8.8.8.8", remarks: "Google DNS" }
+  ]);
   const [newTarget, setNewTarget] = useState("");
+  const [newRemarks, setNewRemarks] = useState("");
   const [results, setResults] = useState<PingResult[]>([]);
   const [targetStats, setTargetStats] = useState<Record<string, TargetStats>>({});
   const [traceResults, setTraceResults] = useState<TraceResult[]>([]);
@@ -74,19 +91,29 @@ function App() {
     repeatOrder: 'robin',
     periodicExecution: false,
     periodicInterval: 60,
+    hideOnMinimize: false,
+    saveSettingsOnExit: true,
+    saveAsCsv: true,
+    autoDeleteResults: true,
+    maxResults: 1000,
+    flashTrayIcon: true,
+    prohibitFragmentation: false,
   });
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("general");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const addTarget = () => {
-    if (newTarget && !targets.includes(newTarget)) {
-      setTargets([...targets, newTarget]);
+    if (newTarget && !targets.some(t => t.host === newTarget)) {
+      setTargets([...targets, { host: newTarget, remarks: newRemarks }]);
       setNewTarget("");
+      setNewRemarks("");
     }
   };
 
   const removeTarget = (t: string) => {
-    setTargets(targets.filter(item => item !== t));
+    setTargets(targets.filter(item => item.host !== t));
   };
 
   const runTraceRoute = async () => {
@@ -96,7 +123,7 @@ function App() {
     for (const target of targets) {
       try {
         const res = await invoke<TraceResult>("traceroute_target", {
-          target,
+          target: target.host,
           timeoutMs: settings.timeout,
           payloadSize: settings.payloadSize,
           maxHops: 30,
@@ -125,7 +152,8 @@ function App() {
 
         const promises = targets.map(target =>
           invoke<PingResult>("ping_target", {
-            target,
+            target: target.host,
+            remarks: target.remarks,
             timeoutMs: settings.timeout,
             payloadSize: settings.payloadSize,
             ttl: settings.ttl
@@ -134,7 +162,13 @@ function App() {
 
         try {
           const newResults = await Promise.all(promises);
-          setResults(prev => [...prev, ...newResults].slice(-1000));
+          setResults(prev => {
+            const combined = [...prev, ...newResults];
+            if (settings.autoDeleteResults && combined.length > settings.maxResults) {
+              return combined.slice(-settings.maxResults);
+            }
+            return combined.slice(-1000); // Fail-safe limit
+          });
 
           setTargetStats(prev => {
             const next = { ...prev };
@@ -198,112 +232,201 @@ function App() {
           <span style={{ color: 'var(--primary)', fontSize: '20px' }}>🌸</span>
           FxPing - Continuously Ping
         </div>
+        <button
+          className={`settings-button ${showSettings ? 'active' : ''}`}
+          onClick={() => setShowSettings(!showSettings)}
+          title="設定"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.81,11.69,4.81,12c0,0.31,0.02,0.65,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.5c-1.93,0-3.5-1.57-3.5-3.5 s1.57-3.5,3.5-3.5s3.5,1.57,3.5,3.5S13.93,15.5,12,15.5z" />
+          </svg>
+        </button>
       </header>
 
       <div className="tab-bar">
-        <div className={`tab ${activeTab === 'targets' ? 'active' : ''}`} onClick={() => setActiveTab('targets')}>対象</div>
-        <div className={`tab ${activeTab === 'env' ? 'active' : ''}`} onClick={() => setActiveTab('env')}>環境</div>
-        <div className={`tab ${activeTab === 'results' ? 'active' : ''}`} onClick={() => setActiveTab('results')}>Ping 結果</div>
-        <div className={`tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>Ping 統計</div>
-        <div className={`tab ${activeTab === 'trace' ? 'active' : ''}`} onClick={() => setActiveTab('trace')}>TraceRoute</div>
+        <div className={`tab ${activeTab === 'targets' ? 'active' : ''}`} onClick={() => { setActiveTab('targets'); setShowSettings(false); }}>対象</div>
+        <div className={`tab ${activeTab === 'results' ? 'active' : ''}`} onClick={() => { setActiveTab('results'); setShowSettings(false); }}>Ping 結果</div>
+        <div className={`tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => { setActiveTab('stats'); setShowSettings(false); }}>Ping 統計</div>
+        <div className={`tab ${activeTab === 'trace' ? 'active' : ''}`} onClick={() => { setActiveTab('trace'); setShowSettings(false); }}>TraceRoute</div>
       </div>
 
       <div className="tab-content">
-        {activeTab === 'targets' && (
+        {showSettings && (
+          <div className="settings-container" style={{ padding: 0 }}>
+            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
+              <h2 style={{ fontSize: '16px', color: 'var(--primary)', margin: 0 }}>環境設定</h2>
+              <button className="btn-small" onClick={() => setShowSettings(false)}>閉じる</button>
+            </div>
+
+            <div className="settings-header-tabs">
+              <div className={`settings-tab ${settingsTab === 'general' ? 'active' : ''}`} onClick={() => setSettingsTab('general')}>基本設定</div>
+              <div className={`settings-tab ${settingsTab === 'ping' ? 'active' : ''}`} onClick={() => setSettingsTab('ping')}>Ping実行設定</div>
+              <div className={`settings-tab ${settingsTab === 'logs' ? 'active' : ''}`} onClick={() => setSettingsTab('logs')}>ログ保存</div>
+              <div className={`settings-tab ${settingsTab === 'ng' ? 'active' : ''}`} onClick={() => setSettingsTab('ng')}>NG時処理</div>
+              <div className={`settings-tab ${settingsTab === 'ok' ? 'active' : ''}`} onClick={() => setSettingsTab('ok')}>OK時処理</div>
+            </div>
+
+            <div className="settings-content-body">
+              {settingsTab === 'general' && (
+                <div className="settings-checkbox-grid">
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={settings.hideOnMinimize} onChange={e => setSettings({ ...settings, hideOnMinimize: e.target.checked })} />
+                    最小化時、タスクバーに非表示
+                  </label>
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={settings.saveSettingsOnExit} onChange={e => setSettings({ ...settings, saveSettingsOnExit: e.target.checked })} />
+                    終了時に対象ファイルの環境を保存する
+                  </label>
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={settings.saveAsCsv} onChange={e => setSettings({ ...settings, saveAsCsv: e.target.checked })} />
+                    Ping 結果の保存はCSV形式
+                  </label>
+
+                  <div style={{ border: '1px solid #444', padding: '12px', borderRadius: '4px', margin: '4px 0' }}>
+                    <label className="checkbox-label">
+                      <input type="checkbox" checked={settings.autoDeleteResults} onChange={e => setSettings({ ...settings, autoDeleteResults: e.target.checked })} />
+                      Ping 結果の自動削除
+                    </label>
+                    <div className="settings-auto-delete-row" style={{ opacity: settings.autoDeleteResults ? 1 : 0.5 }}>
+                      <input
+                        type="number"
+                        value={settings.maxResults}
+                        disabled={!settings.autoDeleteResults}
+                        onChange={e => setSettings({ ...settings, maxResults: parseInt(e.target.value) || 0 })}
+                      />
+                      <span>件を超えた場合、古い結果から削除する</span>
+                    </div>
+                  </div>
+
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={settings.flashTrayIcon} onChange={e => setSettings({ ...settings, flashTrayIcon: e.target.checked })} />
+                    Ping 実行中にトレイアイコンを点滅させる
+                  </label>
+                  <label className="checkbox-label">
+                    <input type="checkbox" checked={settings.prohibitFragmentation} onChange={e => setSettings({ ...settings, prohibitFragmentation: e.target.checked })} />
+                    パケットのフラグメントを禁止する
+                  </label>
+                </div>
+              )}
+
+              {settingsTab === 'ping' && (
+                <div className="settings-container" style={{ padding: 0, background: 'transparent' }}>
+                  <div className="settings-section" style={{ maxWidth: 'none' }}>
+                    <h3>基本設定</h3>
+                    <div className="settings-grid">
+                      <div className="field-group">
+                        <label>繰り返し回数:</label>
+                        <div className="field-row">
+                          <input type="number" value={settings.repeatCount} onChange={e => setSettings({ ...settings, repeatCount: parseInt(e.target.value) || 0 })} />
+                          <span className="unit">回</span>
+                        </div>
+                      </div>
+                      <div className="field-group">
+                        <label>実行間隔:</label>
+                        <div className="field-row">
+                          <input type="number" value={settings.interval} onChange={e => setSettings({ ...settings, interval: parseInt(e.target.value) || 0 })} />
+                          <span className="unit">ミリ秒</span>
+                        </div>
+                      </div>
+                      <div className="field-group">
+                        <label>ブロックサイズ:</label>
+                        <div className="field-row">
+                          <input type="number" value={settings.payloadSize} onChange={e => setSettings({ ...settings, payloadSize: parseInt(e.target.value) || 0 })} />
+                          <span className="unit">バイト</span>
+                        </div>
+                      </div>
+                      <div className="field-group">
+                        <label>タイムアウト:</label>
+                        <div className="field-row">
+                          <input type="number" value={settings.timeout} onChange={e => setSettings({ ...settings, timeout: parseInt(e.target.value) || 0 })} />
+                          <span className="unit">ミリ秒</span>
+                        </div>
+                      </div>
+                      <div className="field-group">
+                        <label>TTL:</label>
+                        <div className="field-row">
+                          <input type="number" value={settings.ttl} onChange={e => setSettings({ ...settings, ttl: parseInt(e.target.value) || 0 })} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="settings-section" style={{ maxWidth: 'none' }}>
+                    <h3>繰り返し順序</h3>
+                    <div className="radio-group">
+                      <label className="checkbox-label">
+                        <input type="radio" checked={settings.repeatOrder === 'sequential'} onChange={() => setSettings({ ...settings, repeatOrder: 'sequential' })} />
+                        ソートしない (A-A-B-B)
+                      </label>
+                      <label className="checkbox-label">
+                        <input type="radio" checked={settings.repeatOrder === 'robin'} onChange={() => setSettings({ ...settings, repeatOrder: 'robin' })} />
+                        端末でソート (A-B-A-B)
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="settings-section" style={{ maxWidth: 'none' }}>
+                    <label className="checkbox-label">
+                      <input type="checkbox" checked={settings.periodicExecution} onChange={e => setSettings({ ...settings, periodicExecution: e.target.checked })} />
+                      定期的に実行する
+                    </label>
+                    <div className="field-row" style={{ marginTop: '10px', marginLeft: '24px' }}>
+                      <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} />
+                      <span className="unit">分間隔</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {['logs', 'ng', 'ok'].includes(settingsTab) && (
+                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>
+                  この設定項目は準備中です
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!showSettings && activeTab === 'targets' && (
           <div className="target-list">
             <div className="toolbar" style={{ margin: '0 0 16px 0', borderRadius: '4px' }}>
-              <div className="input-group">
-                <input
-                  type="text"
-                  placeholder="IPアドレスまたはホスト名..."
-                  value={newTarget}
-                  onChange={(e) => setNewTarget(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addTarget()}
-                />
-                <button onClick={addTarget}>対象を追加</button>
+              <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    style={{ flex: 2 }}
+                    placeholder="IPアドレスまたはホスト名..."
+                    value={newTarget}
+                    onChange={(e) => setNewTarget(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addTarget()}
+                  />
+                  <input
+                    type="text"
+                    style={{ flex: 1 }}
+                    placeholder="備考..."
+                    value={newRemarks}
+                    onChange={(e) => setNewRemarks(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addTarget()}
+                  />
+                  <button onClick={addTarget}>対象を追加</button>
+                </div>
               </div>
             </div>
             {targets.map(t => (
-              <div key={t} className="target-item">
-                <span>{t}</span>
+              <div key={t.host} className="target-item">
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{t.host}</span>
+                  <span style={{ opacity: 0.7, fontSize: '0.9em' }}>{t.remarks}</span>
+                </div>
                 <div className="target-actions">
-                  <button className="btn-small btn-danger" onClick={() => removeTarget(t)}>削除</button>
+                  <button className="btn-small btn-danger" onClick={() => removeTarget(t.host)}>削除</button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {activeTab === 'env' && (
-          <div className="settings-container">
-            <div className="settings-section">
-              <h3>基本設定</h3>
-              <div className="settings-grid">
-                <div className="field-group">
-                  <label>繰り返し回数:</label>
-                  <div className="field-row">
-                    <input type="number" value={settings.repeatCount} onChange={e => setSettings({ ...settings, repeatCount: parseInt(e.target.value) || 0 })} />
-                    <span className="unit">回</span>
-                  </div>
-                </div>
-                <div className="field-group">
-                  <label>実行間隔:</label>
-                  <div className="field-row">
-                    <input type="number" value={settings.interval} onChange={e => setSettings({ ...settings, interval: parseInt(e.target.value) || 0 })} />
-                    <span className="unit">ミリ秒</span>
-                  </div>
-                </div>
-                <div className="field-group">
-                  <label>ブロックサイズ:</label>
-                  <div className="field-row">
-                    <input type="number" value={settings.payloadSize} onChange={e => setSettings({ ...settings, payloadSize: parseInt(e.target.value) || 0 })} />
-                    <span className="unit">バイト</span>
-                  </div>
-                </div>
-                <div className="field-group">
-                  <label>タイムアウト:</label>
-                  <div className="field-row">
-                    <input type="number" value={settings.timeout} onChange={e => setSettings({ ...settings, timeout: parseInt(e.target.value) || 0 })} />
-                    <span className="unit">ミリ秒</span>
-                  </div>
-                </div>
-                <div className="field-group">
-                  <label>TTL:</label>
-                  <div className="field-row">
-                    <input type="number" value={settings.ttl} onChange={e => setSettings({ ...settings, ttl: parseInt(e.target.value) || 0 })} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="settings-section">
-              <h3>繰り返し順序</h3>
-              <div className="radio-group">
-                <label className="checkbox-label">
-                  <input type="radio" checked={settings.repeatOrder === 'sequential'} onChange={() => setSettings({ ...settings, repeatOrder: 'sequential' })} />
-                  ソートしない (A-A-B-B)
-                </label>
-                <label className="checkbox-label">
-                  <input type="radio" checked={settings.repeatOrder === 'robin'} onChange={() => setSettings({ ...settings, repeatOrder: 'robin' })} />
-                  端末でソート (A-B-A-B)
-                </label>
-              </div>
-            </div>
-
-            <div className="settings-section">
-              <label className="checkbox-label">
-                <input type="checkbox" checked={settings.periodicExecution} onChange={e => setSettings({ ...settings, periodicExecution: e.target.checked })} />
-                定期的に実行する
-              </label>
-              <div className="field-row" style={{ marginTop: '10px', marginLeft: '24px' }}>
-                <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} />
-                <span className="unit">分間隔</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'results' && (
+        {!showSettings && activeTab === 'results' && (
           <>
             <div className="toolbar">
               <button
@@ -325,6 +448,7 @@ function App() {
                     <th>IPアドレス</th>
                     <th>応答時間</th>
                     <th>詳細</th>
+                    <th>備考</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -338,6 +462,7 @@ function App() {
                       <td>{res.ip}</td>
                       <td>{res.time_ms !== null ? `${res.time_ms.toFixed(2)} ms` : "-"}</td>
                       <td style={{ opacity: 0.6, fontSize: '12px' }}>{res.status}</td>
+                      <td>{res.remarks}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -346,7 +471,7 @@ function App() {
           </>
         )}
 
-        {activeTab === 'stats' && (
+        {!showSettings && activeTab === 'stats' && (
           <div className="table-container">
             <table>
               <thead>
@@ -361,7 +486,8 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {targets.map(target => {
+                {targets.map(t => {
+                  const target = t.host;
                   const s = targetStats[target];
                   if (!s) return (
                     <tr key={target}>
@@ -399,7 +525,7 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'trace' && (
+        {!showSettings && activeTab === 'trace' && (
           <>
             <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button

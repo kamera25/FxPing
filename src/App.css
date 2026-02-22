@@ -32,10 +32,35 @@ header {
   background: var(--surface);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
+.settings-button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background 0.2s;
+  border-radius: 4px;
+}
+
+.settings-button:hover {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-button.active {
+  color: var(--primary);
+  background: rgba(187, 134, 252, 0.1);
+}
+
 
 .toolbar {
   display: flex;
@@ -273,6 +298,74 @@ button:disabled {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.btn-danger {
-  background: var(--error);
+.settings-header-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 4px 0 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.settings-tab.active {
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+  background: rgba(187, 134, 252, 0.05);
+}
+
+.settings-content-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-checkbox-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-auto-delete-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 24px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.settings-auto-delete-row input[type="number"] {
+  width: 70px;
+  text-align: center;
+}
+
+.settings-button {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.settings-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--primary);
+}
+
+.settings-button.active {
+  color: var(--primary);
+  background: rgba(187, 134, 252, 0.1);
+  border-color: rgba(187, 134, 252, 0.2);
 }

@@ -11,6 +11,7 @@ pub struct PingResult {
     pub time_ms: Option<f64>,
     pub status: String,
     pub timestamp: String,
+    pub remarks: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -31,6 +32,7 @@ pub struct TraceResult {
 #[tauri::command]
 async fn ping_target(
     target: String,
+    remarks: String,
     timeout_ms: u64,
     payload_size: usize,
     ttl: u32,
@@ -77,6 +79,7 @@ async fn ping_target(
                 time_ms: Some(duration.as_secs_f64() * 1000.0),
                 status: "OK".to_string(),
                 timestamp,
+                remarks,
             })
         },
         Err(e) => {
@@ -87,6 +90,7 @@ async fn ping_target(
                 time_ms: None,
                 status: format!("NG ({})", e),
                 timestamp,
+                remarks,
             })
         }
     }
