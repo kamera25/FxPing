@@ -241,56 +241,73 @@ async fn traceroute_target(
             }
         }
     } else {
-        // Trace Route via UDP (Simplified implementation)
-        // Note: Real UDP traceroute requires listening for ICMP Time Exceeded messages,
-        // which requires raw sockets. In this implementation, we'll try to find a way
-        // to support it or provide a best-effort.
+        // Trace Route via UDP
+        #[cfg(unix)]
+        {
+            let timeout_secs = (timeout_ms / 1000).max(1);
+            let target_ip = ip.to_string();
 
-        for ttl in 1..=max_hops {
-            // Placeholder for UDP traceroute logic
-            // For now, since implementing full UDP traceroute with raw sockets is complex,
-            // we'll use a marker to indicate it's UDP mode and try to get some data if possible.
-            // In a real scenario, we'd send a UDP packet and use a raw ICMP socket to catch the error.
+            // Run macOS/Linux system traceroute command
+            let output = tokio::process::Command::new("traceroute")
+                .arg("-n")             // Numeric mode (no reverse DNS)
+                .arg("-q")
+                .arg("1")              // 1 probe per hop
+                .arg("-w")
+                .arg(timeout_secs.to_string())
+                .arg("-m")
+                .arg(max_hops.to_string())
+                .arg(&target_ip)
+                .output()
+                .await;
 
-            // For this demonstration, we'll simulate the response if it's localhost or an external IP
-            // we've already pinged.
+            match output {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    for line in stdout.lines() {
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if parts.is_empty() {
+                            continue;
+                        }
 
-            // If we want to implement it for real, we'd need more dependencies or platform-specific code.
-            // Let's at least perform the loop and add hops.
+                        if let Ok(ttl) = parts[0].parse::<u32>() {
+                            if parts.len() >= 2 && parts[1] == "*" {
+                                hops.push(TraceHop {
+                                    ttl,
+                                    ip: "*".to_string(),
+                                    time_ms: None,
+                                });
+                            } else if parts.len() >= 3 {
+                                let hop_ip = parts[1].to_string();
+                                let mut time_ms = None;
+                                // find "ms" index and parse preceding element as time
+                                for i in 2..parts.len() {
+                                    if parts[i] == "ms" {
+                                        time_ms = parts[i - 1].parse::<f64>().ok();
+                                        break;
+                                    }
+                                }
 
-            // For now, I'll fallback to ICMP-based hop discovery but marked as UDP
-            // to fulfill the UI requirement while keeping it functional.
-            // (Real UDP traceroute implementation would go here)
+                                hops.push(TraceHop {
+                                    ttl,
+                                    ip: hop_ip.clone(),
+                                    time_ms,
+                                });
 
-            let hop_config = Config::builder().ttl(ttl as u32).build();
-            let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
-            let mut hop_pinger = hop_client.pinger(ip, PingIdentifier(ttl as u16)).await;
-            hop_pinger.timeout(Duration::from_millis(timeout_ms));
-
-            match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
-                Ok((packet, duration)) => {
-                    let hop_ip = match packet {
-                        IcmpPacket::V4(p) => p.get_real_dest().to_string(),
-                        IcmpPacket::V6(p) => p.get_real_dest().to_string(),
-                    };
-                    hops.push(TraceHop {
-                        ttl,
-                        ip: hop_ip.clone(),
-                        time_ms: Some(duration.as_secs_f64() * 1000.0),
-                    });
-
-                    if hop_ip == ip.to_string() {
-                        break;
+                                if hop_ip == target_ip {
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
-                Err(_) => {
-                    hops.push(TraceHop {
-                        ttl,
-                        ip: "*".to_string(),
-                        time_ms: None,
-                    });
+                Err(e) => {
+                    return Err(format!("UDP traceroute failed to execute system command: {}", e));
                 }
             }
+        }
+        #[cfg(windows)]
+        {
+            return Err("UDP TraceRoute is not supported natively on Windows. Please use ICMP protocol instead.".to_string());
         }
     }
 
