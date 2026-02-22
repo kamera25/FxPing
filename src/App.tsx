@@ -154,7 +154,7 @@ function App() {
       <header>
         <div style={{ fontWeight: 'bold', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ color: 'var(--primary)', fontSize: '20px' }}>🌸</span>
-          ExPing - Continuously Ping
+          FxPing - Continuously Ping
         </div>
       </header>
 
