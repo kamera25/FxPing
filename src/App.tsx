@@ -302,92 +302,104 @@ function App() {
   }, [results]);
 
   const handleSave = async () => {
+    console.log("handleSave triggered for tab:", activeTab);
     if (activeTab === 'targets') {
       try {
+        console.log("Saving targets:", targets);
         await invoke("save_targets", { targets });
         alert("ExPing.def を保存しました。");
       } catch (e) {
-        alert("保存に失敗しました: " + e);
+        console.error("Save targets error:", e);
+        alert("保存に失敗しました(targets): " + JSON.stringify(e));
       }
     } else if (activeTab === 'results') {
       if (results.length === 0) {
         alert("保存する結果がありません。");
         return;
       }
-      const path = await save({
-        filters: [{
-          name: 'CSV',
-          extensions: ['csv']
-        }, {
-          name: 'Text',
-          extensions: ['txt']
-        }],
-        defaultPath: 'PingResults.csv'
-      });
-      if (path) {
-        const header = "ステータス,日時,対象,IPアドレス,応答時間(ms),詳細,備考\n";
-        const content = results.map(r =>
-          `${r.status.startsWith("OK") ? "OK" : "NG"},${r.timestamp},${r.target},${r.ip},${r.time_ms !== null ? r.time_ms.toFixed(2) : "-"},${r.status},${r.remarks}`
-        ).join('\n');
-        try {
+      try {
+        const path = await save({
+          filters: [{
+            name: 'CSV',
+            extensions: ['csv']
+          }, {
+            name: 'Text',
+            extensions: ['txt']
+          }],
+          defaultPath: 'PingResults.csv'
+        });
+        console.log("Selected save path:", path);
+        if (path) {
+          const header = "ステータス,日時,対象,IPアドレス,応答時間(ms),詳細,備考\n";
+          const content = results.map(r =>
+            `${r.status.startsWith("OK") ? "OK" : "NG"},${r.timestamp},${r.target},${r.ip},${r.time_ms !== null ? r.time_ms.toFixed(2) : "-"},${r.status},${r.remarks}`
+          ).join('\n');
           await invoke("save_text_file", { path, content: header + content });
-        } catch (e) {
-          alert("保存に失敗しました: " + e);
+          alert("保存しました。");
         }
+      } catch (e) {
+        console.error("Save results error:", e);
+        alert("保存に失敗しました(results): " + JSON.stringify(e));
       }
     } else if (activeTab === 'stats') {
       if (targets.length === 0) {
         alert("保存する統計情報がありません。");
         return;
       }
-      const path = await save({
-        filters: [{
-          name: 'CSV',
-          extensions: ['csv']
-        }],
-        defaultPath: 'PingStats.csv'
-      });
-      if (path) {
-        const header = "対象,実施回数,失敗回数,失敗率(%),最短時間(ms),最大時間(ms),平均時間(ms)\n";
-        const content = targets.map(t => {
-          const s = targetStats[t.host];
-          if (!s) return `${t.host},0,0,0,-,-,-`;
-          const failRate = ((s.failedCount / s.executedCount) * 100).toFixed(1);
-          return `${s.target},${s.executedCount},${s.failedCount},${failRate},${s.minTime?.toFixed(2) || "-"},${s.maxTime?.toFixed(2) || "-"},${s.avgTime?.toFixed(2) || "-"}`;
-        }).join('\n');
-        try {
+      try {
+        const path = await save({
+          filters: [{
+            name: 'CSV',
+            extensions: ['csv']
+          }],
+          defaultPath: 'PingStats.csv'
+        });
+        console.log("Selected save path:", path);
+        if (path) {
+          const header = "対象,実施回数,失敗回数,失敗率(%),最短時間(ms),最大時間(ms),平均時間(ms)\n";
+          const content = targets.map(t => {
+            const s = targetStats[t.host];
+            if (!s) return `${t.host},0,0,0,-,-,-`;
+            const failRate = ((s.failedCount / s.executedCount) * 100).toFixed(1);
+            return `${s.target},${s.executedCount},${s.failedCount},${failRate},${s.minTime?.toFixed(2) || "-"},${s.maxTime?.toFixed(2) || "-"},${s.avgTime?.toFixed(2) || "-"}`;
+          }).join('\n');
           await invoke("save_text_file", { path, content: header + content });
-        } catch (e) {
-          alert("保存に失敗しました: " + e);
+          alert("保存しました。");
         }
+      } catch (e) {
+        console.error("Save stats error:", e);
+        alert("保存に失敗しました(stats): " + JSON.stringify(e));
       }
     } else if (activeTab === 'trace') {
       if (traceResults.length === 0) {
         alert("保存するTraceRoute結果がありません。");
         return;
       }
-      const path = await save({
-        filters: [{
-          name: 'Text',
-          extensions: ['txt']
-        }],
-        defaultPath: 'TraceRouteResults.txt'
-      });
-      if (path) {
-        let content = "";
-        traceResults.forEach(res => {
-          content += `Target: ${res.target} (${res.timestamp})\n`;
-          content += `Ping: ${res.ping_ok ? "OK" : "NG"}\n`;
-          res.hops.forEach(h => {
-            content += `${h.ttl}\t${h.ip}\t${h.time_ms !== null ? h.time_ms.toFixed(2) + "ms" : "*"}\n`;
-          });
-          content += "----------------------------------------\n";
+      try {
+        const path = await save({
+          filters: [{
+            name: 'Text',
+            extensions: ['txt']
+          }],
+          defaultPath: 'TraceRouteResults.txt'
         });
-        try {
+        console.log("Selected save path:", path);
+        if (path) {
+          let content = "";
+          traceResults.forEach(res => {
+            content += `Target: ${res.target} (${res.timestamp})\n`;
+            content += `Ping: ${res.ping_ok ? "OK" : "NG"}\n`;
+            res.hops.forEach(h => {
+              content += `${h.ttl}\t${h.ip}\t${h.time_ms !== null ? h.time_ms.toFixed(2) + "ms" : "*"}\n`;
+            });
+            content += "----------------------------------------\n";
+          });
           await invoke("save_text_file", { path, content });
-        } catch (e) {
-          alert("保存に失敗しました: " + e);
+          alert("保存しました。");
         }
+      } catch (e) {
+        console.error("Save trace error:", e);
+        alert("保存に失敗しました(trace): " + JSON.stringify(e));
       }
     }
   };
