@@ -23,6 +23,17 @@ interface TraceResult {
   timestamp: string;
 }
 
+interface TargetStats {
+  target: string;
+  executedCount: number;
+  failedCount: number;
+  minTime: number | null;
+  maxTime: number | null;
+  avgTime: number | null;
+  totalTime: number;
+  successCount: number;
+}
+
 const formatDate = (date: Date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -49,6 +60,7 @@ function App() {
   const [targets, setTargets] = useState<string[]>(["127.0.0.1", "8.8.8.8"]);
   const [newTarget, setNewTarget] = useState("");
   const [results, setResults] = useState<PingResult[]>([]);
+  const [targetStats, setTargetStats] = useState<Record<string, TargetStats>>({});
   const [traceResults, setTraceResults] = useState<TraceResult[]>([]);
   const [isPinging, setIsPinging] = useState(false);
   const [isTracing, setIsTracing] = useState(false);
@@ -123,6 +135,36 @@ function App() {
         try {
           const newResults = await Promise.all(promises);
           setResults(prev => [...prev, ...newResults].slice(-1000));
+
+          setTargetStats(prev => {
+            const next = { ...prev };
+            newResults.forEach(res => {
+              const stats = next[res.target] || {
+                target: res.target,
+                executedCount: 0,
+                failedCount: 0,
+                minTime: null,
+                maxTime: null,
+                avgTime: null,
+                totalTime: 0,
+                successCount: 0,
+              };
+
+              stats.executedCount++;
+              if (res.time_ms !== null) {
+                stats.successCount++;
+                stats.totalTime += res.time_ms;
+                stats.minTime = stats.minTime === null ? res.time_ms : Math.min(stats.minTime, res.time_ms);
+                stats.maxTime = stats.maxTime === null ? res.time_ms : Math.max(stats.maxTime, res.time_ms);
+                stats.avgTime = stats.totalTime / stats.successCount;
+              } else {
+                stats.failedCount++;
+              }
+              next[res.target] = stats;
+            });
+            return next;
+          });
+
           count++;
         } catch (e) {
           console.error("Ping error", e);
@@ -270,7 +312,7 @@ function App() {
               >
                 {isPinging ? "■ 停止" : "▶ 開始"}
               </button>
-              <button onClick={() => setResults([])}>履歴クリア</button>
+              <button onClick={() => { setResults([]); setTargetStats({}); }}>履歴クリア</button>
             </div>
 
             <div className="table-container" ref={scrollRef}>
@@ -305,8 +347,55 @@ function App() {
         )}
 
         {activeTab === 'stats' && (
-          <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>
-            統計機能は準備中です
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>対象</th>
+                  <th style={{ width: '100px' }}>実施回数</th>
+                  <th style={{ width: '100px' }}>失敗回数</th>
+                  <th style={{ width: '100px' }}>失敗率</th>
+                  <th style={{ width: '100px' }}>最短時間</th>
+                  <th style={{ width: '100px' }}>最大時間</th>
+                  <th style={{ width: '100px' }}>平均時間</th>
+                </tr>
+              </thead>
+              <tbody>
+                {targets.map(target => {
+                  const s = targetStats[target];
+                  if (!s) return (
+                    <tr key={target}>
+                      <td>{target}</td>
+                      <td>0回</td>
+                      <td>0回</td>
+                      <td>0%</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>-</td>
+                    </tr>
+                  );
+                  const failRate = ((s.failedCount / s.executedCount) * 100).toFixed(1);
+                  return (
+                    <tr key={target}>
+                      <td>{s.target}</td>
+                      <td>{s.executedCount}回</td>
+                      <td style={{ color: s.failedCount > 0 ? '#ff4d4d' : 'inherit' }}>{s.failedCount}回</td>
+                      <td style={{ color: s.failedCount > 0 ? '#ff4d4d' : 'inherit' }}>{failRate}%</td>
+                      <td>{s.minTime !== null ? `${s.minTime.toFixed(2)} ms` : "-"}</td>
+                      <td>{s.maxTime !== null ? `${s.maxTime.toFixed(2)} ms` : "-"}</td>
+                      <td>{s.avgTime !== null ? `${s.avgTime.toFixed(2)} ms` : "-"}</td>
+                    </tr>
+                  );
+                })}
+                {targets.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                      対象が設定されていません
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
 
