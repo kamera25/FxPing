@@ -89,6 +89,7 @@ pub struct PingResult {
 pub struct TraceHop {
     pub ttl: u32,
     pub ip: String,
+    pub fqdn: Option<String>,
     pub time_ms: Option<f64>,
 }
 
@@ -221,13 +222,20 @@ async fn traceroute_target(
                         IcmpPacket::V4(p) => p.get_real_dest().to_string(),
                         IcmpPacket::V6(p) => p.get_real_dest().to_string(),
                     };
+                    let hop_ip_str = hop_ip.clone();
+                    let fqdn = match IpAddr::from_str(&hop_ip_str) {
+                        Ok(addr) => dns_lookup::lookup_addr(&addr).ok(),
+                        Err(_) => None,
+                    };
+
                     hops.push(TraceHop {
                         ttl,
-                        ip: hop_ip.clone(),
+                        ip: hop_ip,
+                        fqdn,
                         time_ms: Some(duration.as_secs_f64() * 1000.0),
                     });
 
-                    if hop_ip == ip.to_string() {
+                    if hop_ip_str == ip.to_string() {
                         break;
                     }
                 }
@@ -235,6 +243,7 @@ async fn traceroute_target(
                     hops.push(TraceHop {
                         ttl,
                         ip: "*".to_string(),
+                        fqdn: None,
                         time_ms: None,
                     });
                 }
@@ -274,6 +283,7 @@ async fn traceroute_target(
                                 hops.push(TraceHop {
                                     ttl,
                                     ip: "*".to_string(),
+                                    fqdn: None,
                                     time_ms: None,
                                 });
                             } else if parts.len() >= 3 {
@@ -287,9 +297,15 @@ async fn traceroute_target(
                                     }
                                 }
 
+                                let fqdn = match IpAddr::from_str(&hop_ip) {
+                                    Ok(addr) => dns_lookup::lookup_addr(&addr).ok(),
+                                    Err(_) => None,
+                                };
+
                                 hops.push(TraceHop {
                                     ttl,
                                     ip: hop_ip.clone(),
+                                    fqdn,
                                     time_ms,
                                 });
 
@@ -322,6 +338,11 @@ async fn traceroute_target(
 #[tauri::command]
 fn validate_host(host: String) -> Result<(), String> {
     Host::new(&host).map(|_| ())
+}
+
+#[tauri::command]
+fn get_platform() -> String {
+    std::env::consts::OS.to_string()
 }
 
 #[derive(Debug, Deserialize)]
@@ -366,7 +387,8 @@ pub fn run() {
             traceroute_target,
             validate_host,
             save_targets,
-            save_text_file
+            save_text_file,
+            get_platform
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

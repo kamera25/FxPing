@@ -27,4 +27,5 @@ tokio = { version = "1", features = ["full"] }
 chrono = { version = "0.4", features = ["serde"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+dns-lookup = "2.0"
 

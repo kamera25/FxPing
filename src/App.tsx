@@ -20,6 +20,7 @@ interface Target {
 interface TraceHop {
   ttl: number;
   ip: string;
+  fqdn?: string | null;
   time_ms: number | null;
 }
 
@@ -100,6 +101,7 @@ function App() {
     flashTrayIcon: true,
     prohibitFragmentation: false,
   });
+  const [platform, setPlatform] = useState<string>("");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
@@ -107,6 +109,10 @@ function App() {
   const [exPingText, setExPingText] = useState("");
   const [isInputError, setIsInputError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    invoke<string>("get_platform").then(setPlatform);
+  }, []);
 
   const triggerShake = () => {
     setIsInputError(true);
@@ -771,24 +777,26 @@ function App() {
                 {isTracing ? "追跡中..." : "▶ TraceRoute 開始"}
               </button>
 
-              <div className="input-group" style={{ width: 'auto' }}>
-                <span style={{ fontSize: '12px', opacity: 0.7 }}>プロトコル:</span>
-                <select
-                  value={traceProtocol}
-                  onChange={(e) => setTraceProtocol(e.target.value as 'ICMP' | 'UDP')}
-                  disabled={isTracing}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    background: 'var(--bg-secondary)',
-                    color: 'white',
-                    border: '1px solid var(--border)'
-                  }}
-                >
-                  <option value="ICMP">ICMP</option>
-                  <option value="UDP">UDP</option>
-                </select>
-              </div>
+              {platform !== "windows" && (
+                <div className="input-group" style={{ width: 'auto' }}>
+                  <span style={{ fontSize: '12px', opacity: 0.7 }}>プロトコル:</span>
+                  <select
+                    value={traceProtocol}
+                    onChange={(e) => setTraceProtocol(e.target.value as 'ICMP' | 'UDP')}
+                    disabled={isTracing}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      background: 'var(--bg-secondary)',
+                      color: 'white',
+                      border: '1px solid var(--border)'
+                    }}
+                  >
+                    <option value="ICMP">ICMP</option>
+                    <option value="UDP">UDP</option>
+                  </select>
+                </div>
+              )}
 
               <button onClick={() => setTraceResults([])}>履歴クリア</button>
             </div>
@@ -823,6 +831,7 @@ function App() {
                               {hop ? (
                                 <>
                                   <div style={{ fontWeight: 'bold', color: hop.ip === "*" ? "#ff4d4d" : "inherit" }}>{hop.ip}</div>
+                                  {hop.fqdn && <div style={{ opacity: 0.8, color: 'var(--primary)', fontStyle: 'italic' }}>{hop.fqdn}</div>}
                                   <div style={{ opacity: 0.6 }}>{hop.time_ms !== null ? `${hop.time_ms.toFixed(1)}ms` : "-"}</div>
                                 </>
                               ) : "-"}
