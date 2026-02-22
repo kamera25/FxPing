@@ -172,6 +172,32 @@ button:disabled {
 .tab-bar {
   display: flex;
   background: var(--surface);
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tab-bar-actions {
+  padding-right: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.save-button {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--primary);
 }
 
 .tab {

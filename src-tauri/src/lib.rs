@@ -1,9 +1,11 @@
-use serde::{Serialize, Deserialize};
-use surge_ping::{Client, Config, PingIdentifier, PingSequence, IcmpPacket};
-use std::net::IpAddr;
-use std::time::Duration;
 use chrono::Local;
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Write;
+use std::net::IpAddr;
 use std::str::FromStr;
+use std::time::Duration;
+use surge_ping::{Client, Config, IcmpPacket, PingIdentifier, PingSequence};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Host(String);
@@ -26,7 +28,7 @@ impl Host {
         }
 
         // 3. Check if it's an FQDN
-        // Simple FQDN validation: 
+        // Simple FQDN validation:
         // - At least one dot
         // - No consecutive dots
         // - Only alphanumeric, dots, and hyphens (hyphens not at start/end of parts)
@@ -49,7 +51,10 @@ impl Host {
             return Ok(Host(s.to_string()));
         }
 
-        Err(format!("Invalid target: {}. Must be IPv4, IPv6, FQDN, or localhost", s))
+        Err(format!(
+            "Invalid target: {}. Must be IPv4, IPv6, FQDN, or localhost",
+            s
+        ))
     }
 
     pub fn as_str(&self) -> &str {
@@ -110,31 +115,32 @@ async fn ping_target(
     // surge-ping allows setting TTL on the Config
     // Note: Config doesn't have a direct ttl method, it's usually set on the pinger or socket
     // Actually, surge-ping's Client or Pinger handles TTL.
-    
+
     let client = Client::new(&config).map_err(|e| e.to_string())?;
     let ip: IpAddr = match target_str.parse() {
         Ok(ip) => ip,
         Err(_) => {
             use std::net::ToSocketAddrs;
             match format!("{}:0", target_str).to_socket_addrs() {
-                Ok(mut addrs) => addrs.next().map(|s| s.ip()).ok_or_else(|| {
-                    format!("Could not resolve target: {}", target_str)
-                })?,
+                Ok(mut addrs) => addrs
+                    .next()
+                    .map(|s| s.ip())
+                    .ok_or_else(|| format!("Could not resolve target: {}", target_str))?,
                 Err(e) => return Err(format!("DNS resolution failed for {}: {}", target_str, e)),
             }
         }
     };
-    
+
     let mut pinger = client.pinger(ip, PingIdentifier(0)).await;
     pinger.timeout(Duration::from_millis(timeout_ms));
-    
+
     // Set TTL on the pinger if possible
     // In surge-ping, TTL is often set via the underlying socket or Config if supported.
     // If surge-ping doesn't support TTL directly in this version, we'll focus on timeout/payload.
-    
+
     let payload = vec![0u8; payload_size];
     let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
-    
+
     match pinger.ping(PingSequence(0), &payload).await {
         Ok((packet, duration)) => {
             let ip_addr = match packet {
@@ -149,7 +155,7 @@ async fn ping_target(
                 timestamp,
                 remarks,
             })
-        },
+        }
         Err(e) => {
             let target_clone = target.clone();
             Ok(PingResult {
@@ -177,15 +183,16 @@ async fn traceroute_target(
     let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
     let config = Config::default();
     let client = Client::new(&config).map_err(|e| e.to_string())?;
-    
+
     let ip: IpAddr = match target_str.parse() {
         Ok(ip) => ip,
         Err(_) => {
             use std::net::ToSocketAddrs;
             match format!("{}:0", target_str).to_socket_addrs() {
-                Ok(mut addrs) => addrs.next().map(|s| s.ip()).ok_or_else(|| {
-                    format!("Could not resolve target: {}", target_str)
-                })?,
+                Ok(mut addrs) => addrs
+                    .next()
+                    .map(|s| s.ip())
+                    .ok_or_else(|| format!("Could not resolve target: {}", target_str))?,
                 Err(e) => return Err(format!("DNS resolution failed for {}: {}", target_str, e)),
             }
         }
@@ -195,21 +202,19 @@ async fn traceroute_target(
     let mut pinger = client.pinger(ip, PingIdentifier(0)).await;
     pinger.timeout(Duration::from_millis(timeout_ms));
     let payload = vec![0u8; payload_size];
-    
+
     let ping_ok = pinger.ping(PingSequence(0), &payload).await.is_ok();
-    
+
     let mut hops = Vec::new();
-    
+
     if protocol == "ICMP" {
         // Trace Route via ICMP
         for ttl in 1..=max_hops {
-            let hop_config = Config::builder()
-                .ttl(ttl as u32)
-                .build();
+            let hop_config = Config::builder().ttl(ttl as u32).build();
             let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
             let mut hop_pinger = hop_client.pinger(ip, PingIdentifier(ttl as u16)).await;
             hop_pinger.timeout(Duration::from_millis(timeout_ms));
-            
+
             match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
                 Ok((packet, duration)) => {
                     let hop_ip = match packet {
@@ -221,11 +226,11 @@ async fn traceroute_target(
                         ip: hop_ip.clone(),
                         time_ms: Some(duration.as_secs_f64() * 1000.0),
                     });
-                    
+
                     if hop_ip == ip.to_string() {
                         break;
                     }
-                },
+                }
                 Err(_) => {
                     hops.push(TraceHop {
                         ttl,
@@ -238,32 +243,30 @@ async fn traceroute_target(
     } else {
         // Trace Route via UDP (Simplified implementation)
         // Note: Real UDP traceroute requires listening for ICMP Time Exceeded messages,
-        // which requires raw sockets. In this implementation, we'll try to find a way 
+        // which requires raw sockets. In this implementation, we'll try to find a way
         // to support it or provide a best-effort.
-        
+
         for ttl in 1..=max_hops {
             // Placeholder for UDP traceroute logic
             // For now, since implementing full UDP traceroute with raw sockets is complex,
             // we'll use a marker to indicate it's UDP mode and try to get some data if possible.
             // In a real scenario, we'd send a UDP packet and use a raw ICMP socket to catch the error.
-            
+
             // For this demonstration, we'll simulate the response if it's localhost or an external IP
             // we've already pinged.
-            
+
             // If we want to implement it for real, we'd need more dependencies or platform-specific code.
             // Let's at least perform the loop and add hops.
-            
-            // For now, I'll fallback to ICMP-based hop discovery but marked as UDP 
+
+            // For now, I'll fallback to ICMP-based hop discovery but marked as UDP
             // to fulfill the UI requirement while keeping it functional.
             // (Real UDP traceroute implementation would go here)
-            
-            let hop_config = Config::builder()
-                .ttl(ttl as u32)
-                .build();
+
+            let hop_config = Config::builder().ttl(ttl as u32).build();
             let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
             let mut hop_pinger = hop_client.pinger(ip, PingIdentifier(ttl as u16)).await;
             hop_pinger.timeout(Duration::from_millis(timeout_ms));
-            
+
             match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
                 Ok((packet, duration)) => {
                     let hop_ip = match packet {
@@ -275,11 +278,11 @@ async fn traceroute_target(
                         ip: hop_ip.clone(),
                         time_ms: Some(duration.as_secs_f64() * 1000.0),
                     });
-                    
+
                     if hop_ip == ip.to_string() {
                         break;
                     }
-                },
+                }
                 Err(_) => {
                     hops.push(TraceHop {
                         ttl,
@@ -307,8 +310,14 @@ fn validate_host(host: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![ping_target, traceroute_target, validate_host])
+        .invoke_handler(tauri::generate_handler![
+            ping_target,
+            traceroute_target,
+            validate_host
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

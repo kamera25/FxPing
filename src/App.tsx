@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 interface PingResult {
@@ -300,12 +301,96 @@ function App() {
     }
   }, [results]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const handleSave = async () => {
+    if (activeTab === 'targets') {
+      try {
+        await invoke("save_targets", { targets });
+        alert("ExPing.def を保存しました。");
+      } catch (e) {
+        alert("保存に失敗しました: " + e);
+      }
+    } else if (activeTab === 'results') {
+      if (results.length === 0) {
+        alert("保存する結果がありません。");
+        return;
+      }
+      const path = await save({
+        filters: [{
+          name: 'CSV',
+          extensions: ['csv']
+        }, {
+          name: 'Text',
+          extensions: ['txt']
+        }],
+        defaultPath: 'PingResults.csv'
+      });
+      if (path) {
+        const header = "ステータス,日時,対象,IPアドレス,応答時間(ms),詳細,備考\n";
+        const content = results.map(r =>
+          `${r.status.startsWith("OK") ? "OK" : "NG"},${r.timestamp},${r.target},${r.ip},${r.time_ms !== null ? r.time_ms.toFixed(2) : "-"},${r.status},${r.remarks}`
+        ).join('\n');
+        try {
+          await invoke("save_text_file", { path, content: header + content });
+        } catch (e) {
+          alert("保存に失敗しました: " + e);
+        }
+      }
+    } else if (activeTab === 'stats') {
+      if (targets.length === 0) {
+        alert("保存する統計情報がありません。");
+        return;
+      }
+      const path = await save({
+        filters: [{
+          name: 'CSV',
+          extensions: ['csv']
+        }],
+        defaultPath: 'PingStats.csv'
+      });
+      if (path) {
+        const header = "対象,実施回数,失敗回数,失敗率(%),最短時間(ms),最大時間(ms),平均時間(ms)\n";
+        const content = targets.map(t => {
+          const s = targetStats[t.host];
+          if (!s) return `${t.host},0,0,0,-,-,-`;
+          const failRate = ((s.failedCount / s.executedCount) * 100).toFixed(1);
+          return `${s.target},${s.executedCount},${s.failedCount},${failRate},${s.minTime?.toFixed(2) || "-"},${s.maxTime?.toFixed(2) || "-"},${s.avgTime?.toFixed(2) || "-"}`;
+        }).join('\n');
+        try {
+          await invoke("save_text_file", { path, content: header + content });
+        } catch (e) {
+          alert("保存に失敗しました: " + e);
+        }
+      }
+    } else if (activeTab === 'trace') {
+      if (traceResults.length === 0) {
+        alert("保存するTraceRoute結果がありません。");
+        return;
+      }
+      const path = await save({
+        filters: [{
+          name: 'Text',
+          extensions: ['txt']
+        }],
+        defaultPath: 'TraceRouteResults.txt'
+      });
+      if (path) {
+        let content = "";
+        traceResults.forEach(res => {
+          content += `Target: ${res.target} (${res.timestamp})\n`;
+          content += `Ping: ${res.ping_ok ? "OK" : "NG"}\n`;
+          res.hops.forEach(h => {
+            content += `${h.ttl}\t${h.ip}\t${h.time_ms !== null ? h.time_ms.toFixed(2) + "ms" : "*"}\n`;
+          });
+          content += "----------------------------------------\n";
+        });
+        try {
+          await invoke("save_text_file", { path, content });
+        } catch (e) {
+          alert("保存に失敗しました: " + e);
+        }
+      }
+    }
+  };
 
   return (
     <div className="app-container">
@@ -326,10 +411,19 @@ function App() {
       </header>
 
       <div className="tab-bar">
-        <div className={`tab ${activeTab === 'targets' ? 'active' : ''}`} onClick={() => { setActiveTab('targets'); setShowSettings(false); }}>対象</div>
-        <div className={`tab ${activeTab === 'results' ? 'active' : ''}`} onClick={() => { setActiveTab('results'); setShowSettings(false); }}>Ping 結果</div>
-        <div className={`tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => { setActiveTab('stats'); setShowSettings(false); }}>Ping 統計</div>
-        <div className={`tab ${activeTab === 'trace' ? 'active' : ''}`} onClick={() => { setActiveTab('trace'); setShowSettings(false); }}>TraceRoute</div>
+        <div style={{ display: 'flex' }}>
+          <div className={`tab ${activeTab === 'targets' ? 'active' : ''}`} onClick={() => { setActiveTab('targets'); setShowSettings(false); }}>対象</div>
+          <div className={`tab ${activeTab === 'results' ? 'active' : ''}`} onClick={() => { setActiveTab('results'); setShowSettings(false); }}>Ping 結果</div>
+          <div className={`tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => { setActiveTab('stats'); setShowSettings(false); }}>Ping 統計</div>
+          <div className={`tab ${activeTab === 'trace' ? 'active' : ''}`} onClick={() => { setActiveTab('trace'); setShowSettings(false); }}>TraceRoute</div>
+        </div>
+        <div className="tab-bar-actions">
+          <button className="save-button" onClick={handleSave} title="保存">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M17,3H5C3.89,3,3,3.9,3,5v14c0,1.1,0.89,2,2,2h14c1.1,0,2-0.9,2-2V7L17,3z M12,19c-1.66,0-3-1.34-3-3s1.34-3,3-3s3,1.34,3,3 S13.66,19,12,19z M15,9H5V5h10V9z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="tab-content">
