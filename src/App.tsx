@@ -145,13 +145,13 @@ function App() {
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed) continue;
+      if (!trimmed || trimmed.startsWith("‘")) continue;
 
       let host = trimmed;
       let remarks = "";
 
-      if (trimmed.includes("#")) {
-        const parts = trimmed.split("#");
+      if (trimmed.includes(" ")) {
+        const parts = trimmed.split(" ");
         host = parts[0].trim();
         remarks = parts[1].trim();
       }
@@ -631,7 +631,7 @@ function App() {
               ) : (
                 <div className="exping-input-area">
                   <div style={{ marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>
-                    ExPing形式で入力（例: 8.8.8.8 #google dns）
+                    ExPing形式で入力 (既存の定義を上書き)
                   </div>
                   <textarea
                     style={{
@@ -646,7 +646,7 @@ function App() {
                       fontFamily: 'monospace',
                       resize: 'vertical'
                     }}
-                    placeholder="8.8.8.8 #google dns 1&#10;8.8.4.4 #google dns 2"
+                    placeholder="'監視対象 サーバ群&#10;localhost 自機 1&#10;8.8.8.8 Google_Public_DNS#1"
                     value={exPingText}
                     onChange={(e) => setExPingText(e.target.value)}
                     onDragOver={(e) => e.preventDefault()}

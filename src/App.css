@@ -133,6 +133,11 @@ input {
   outline: none;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
 input:focus {
   border-color: var(--primary);
 }
@@ -322,6 +327,11 @@ button:disabled {
   padding: 4px 8px;
   font-size: 11px;
   background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-danger {
+  background: var(--error) !important;
+  color: white !important;
 }
 
 .settings-header-tabs {
