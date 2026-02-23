@@ -376,6 +376,11 @@ async fn save_text_file(path: String, content: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
+    std::fs::read(&path).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -388,7 +393,8 @@ pub fn run() {
             validate_host,
             save_targets,
             save_text_file,
-            get_platform
+            get_platform,
+            read_file_bytes
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

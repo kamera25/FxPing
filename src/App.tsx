@@ -40,6 +40,7 @@ interface TargetStats {
   avgTime: number | null;
   totalTime: number;
   successCount: number;
+  isLastFailed: boolean;
 }
 
 const formatDate = (date: Date) => {
@@ -205,6 +206,25 @@ function App() {
     setTimeout(() => setIsInputError(false), 500);
   };
 
+  const playSound = async (filePath: string) => {
+    if (!filePath) return;
+    try {
+      const bytes = await invoke<number[]>("read_file_bytes", { path: filePath });
+      const uint8 = new Uint8Array(bytes);
+      let mimeType = 'audio/wav';
+      if (filePath.toLowerCase().endsWith('.mp3')) {
+        mimeType = 'audio/mpeg';
+      }
+      const blob = new Blob([uint8], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch (e) {
+      console.error("Audio error", e);
+    }
+  };
+
   const addTarget = async () => {
     if (!newTarget) {
       triggerShake();
@@ -357,6 +377,7 @@ function App() {
                 avgTime: null,
                 totalTime: 0,
                 successCount: 0,
+                isLastFailed: false,
               };
 
               stats.executedCount++;
@@ -366,8 +387,10 @@ function App() {
                 stats.minTime = stats.minTime === null ? res.time_ms : Math.min(stats.minTime, res.time_ms);
                 stats.maxTime = stats.maxTime === null ? res.time_ms : Math.max(stats.maxTime, res.time_ms);
                 stats.avgTime = stats.totalTime / stats.successCount;
+                stats.isLastFailed = false;
               } else {
                 stats.failedCount++;
+                stats.isLastFailed = true;
               }
               next[res.target] = stats;
             });
@@ -415,6 +438,9 @@ function App() {
 
             if (alertToSet) {
               setActiveAlert(current => current || alertToSet);
+              if (settings.ng.playSound && settings.ng.soundFile) {
+                playSound(settings.ng.soundFile);
+              }
             }
             return nextStats;
           });
@@ -773,7 +799,7 @@ function App() {
                       <div className="path-input-group" style={{ opacity: settings.ng.playSound ? 1 : 0.5 }}>
                         <input type="text" value={settings.ng.soundFile} onChange={e => setSettings({ ...settings, ng: { ...settings.ng, soundFile: e.target.value } })} disabled={!settings.ng.playSound} />
                         <button className="btn-small" onClick={() => selectFile('sound')} disabled={!settings.ng.playSound}>...</button>
-                        <button className="btn-small" disabled={!settings.ng.playSound}>♪</button>
+                        <button className="btn-small" disabled={!settings.ng.playSound} onClick={() => playSound(settings.ng.soundFile)}>♪</button>
                       </div>
                     </div>
 
@@ -1018,12 +1044,13 @@ function App() {
                     </tr>
                   );
                   const failRate = ((s.failedCount / s.executedCount) * 100).toFixed(1);
+                  const failColor = s.failedCount > 0 ? (s.isLastFailed ? '#ff4d4d' : '#ffca28') : 'inherit';
                   return (
                     <tr key={target}>
                       <td>{s.target}</td>
                       <td>{s.executedCount}回</td>
-                      <td style={{ color: s.failedCount > 0 ? '#ff4d4d' : 'inherit' }}>{s.failedCount}回</td>
-                      <td style={{ color: s.failedCount > 0 ? '#ff4d4d' : 'inherit' }}>{failRate}%</td>
+                      <td style={{ color: failColor }}>{s.failedCount}回</td>
+                      <td style={{ color: failColor }}>{failRate}%</td>
                       <td>{s.minTime !== null ? `${s.minTime.toFixed(2)} ms` : "-"}</td>
                       <td>{s.maxTime !== null ? `${s.maxTime.toFixed(2)} ms` : "-"}</td>
                       <td>{s.avgTime !== null ? `${s.avgTime.toFixed(2)} ms` : "-"}</td>
