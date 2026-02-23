@@ -109,7 +109,7 @@ function App() {
   const [targetStats, setTargetStats] = useState<Record<string, TargetStats>>({});
   const [traceResults, setTraceResults] = useState<TraceResult[]>([]);
   const [isPinging, setIsPinging] = useState(false);
-  const [targetNgStats, setTargetNgStats] = useState<Record<string, { consecutiveCount: number, alerted: boolean }>>({});
+  const [_targetNgStats, setTargetNgStats] = useState<Record<string, { consecutiveCount: number, alerted: boolean }>>({});
   const [activeAlert, setActiveAlert] = useState<{ target: string, timestamp: string, reason: string } | null>(null);
   const [isTracing, setIsTracing] = useState(false);
   const [traceProtocol, setTraceProtocol] = useState<'ICMP' | 'UDP'>('ICMP');
@@ -199,6 +199,12 @@ function App() {
 
   useEffect(() => {
     invoke<string>("get_platform").then(setPlatform);
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const triggerShake = () => {
