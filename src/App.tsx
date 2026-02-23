@@ -86,6 +86,14 @@ interface Settings {
     countConsecutiveOnly: boolean;
     notifyOnIntervalOnly: boolean;
   };
+  logs: {
+    autoSave: boolean;
+    savePath: string;
+    fileNameSetting: 'fixed' | 'dated';
+    fixedName: string;
+    prefix: string;
+    extension: string;
+  };
 }
 
 function App() {
@@ -100,6 +108,8 @@ function App() {
   const [targetStats, setTargetStats] = useState<Record<string, TargetStats>>({});
   const [traceResults, setTraceResults] = useState<TraceResult[]>([]);
   const [isPinging, setIsPinging] = useState(false);
+  const [targetNgStats, setTargetNgStats] = useState<Record<string, { consecutiveCount: number, alerted: boolean }>>({});
+  const [activeAlert, setActiveAlert] = useState<{ target: string, timestamp: string, reason: string } | null>(null);
   const [isTracing, setIsTracing] = useState(false);
   const [traceProtocol, setTraceProtocol] = useState<'ICMP' | 'UDP'>('ICMP');
   const [settings, setSettings] = useState<Settings>({
@@ -135,6 +145,14 @@ function App() {
       countToNotify: 3,
       countConsecutiveOnly: true,
       notifyOnIntervalOnly: false,
+    },
+    logs: {
+      autoSave: true,
+      savePath: "D:\\ping",
+      fileNameSetting: 'dated',
+      fixedName: "ExPing.log",
+      prefix: "ExPing",
+      extension: "LOG",
     }
   });
   const [platform, setPlatform] = useState<string>("");
@@ -354,6 +372,51 @@ function App() {
               next[res.target] = stats;
             });
             return next;
+          });
+
+          // NG logic
+          setTargetNgStats(prev => {
+            const nextStats = { ...prev };
+            let alertToSet: { target: string, timestamp: string, reason: string } | null = null;
+
+            newResults.forEach(res => {
+              const isNg = res.time_ms === null;
+              const current = nextStats[res.target] || { consecutiveCount: 0, alerted: false };
+              const nextConsecutive = isNg ? current.consecutiveCount + 1 : 0;
+              let nextAlerted = isNg ? current.alerted : false;
+
+              if (isNg && settings.ng.showPopup) {
+                const threshold = settings.ng.notUntilCountReached ? settings.ng.countToNotify : 1;
+                let shouldTrigger = false;
+
+                // Threshold check: trigger exactly when reached
+                if (nextConsecutive === threshold) {
+                  shouldTrigger = true;
+                }
+
+                if (settings.ng.onceOnly && nextAlerted) {
+                  shouldTrigger = false;
+                }
+
+                if (shouldTrigger) {
+                  alertToSet = {
+                    target: res.target,
+                    timestamp: res.timestamp,
+                    reason: res.status
+                  };
+                  nextAlerted = true;
+                }
+              } else if (!isNg) {
+                nextAlerted = false;
+              }
+
+              nextStats[res.target] = { consecutiveCount: nextConsecutive, alerted: nextAlerted };
+            });
+
+            if (alertToSet) {
+              setActiveAlert(current => current || alertToSet);
+            }
+            return nextStats;
           });
 
           count++;
@@ -635,6 +698,56 @@ function App() {
                     <div className="field-row" style={{ marginTop: '10px', marginLeft: '24px' }}>
                       <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} />
                       <span className="unit">分間隔</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'logs' && (
+                <div className="log-settings-container">
+                  <div className="settings-section" style={{ maxWidth: 'none', background: 'transparent', border: 'none', padding: 0 }}>
+                    <div style={{ border: 'none', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+                      <label className="checkbox-label" style={{ fontWeight: 'bold' }}>
+                        <input type="checkbox" checked={settings.logs.autoSave} onChange={e => setSettings({ ...settings, logs: { ...settings.logs, autoSave: e.target.checked } })} />
+                        Ping のログを自動保存する
+                      </label>
+                      <div className="ng-field-row" style={{ marginTop: '12px', opacity: settings.logs.autoSave ? 1 : 0.5 }}>
+                        <label style={{ minWidth: '60px' }}>保存先:</label>
+                        <div className="path-input-group">
+                          <input type="text" value={settings.logs.savePath} onChange={e => setSettings({ ...settings, logs: { ...settings.logs, savePath: e.target.value } })} disabled={!settings.logs.autoSave} />
+                          <button className="btn-small" onClick={selectDir} disabled={!settings.logs.autoSave}>...</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="ng-section-group" style={{ opacity: settings.logs.autoSave ? 1 : 0.5 }}>
+                      <span style={{ fontSize: '13px', marginBottom: '8px', display: 'block' }}>ログファイル名</span>
+                      <div className="radio-group" style={{ border: 'none', background: 'transparent', padding: 0 }}>
+                        <div className="ng-input-row" style={{ gap: '16px' }}>
+                          <label className="checkbox-label">
+                            <input type="radio" checked={settings.logs.fileNameSetting === 'fixed'} onChange={() => setSettings({ ...settings, logs: { ...settings.logs, fileNameSetting: 'fixed' } })} disabled={!settings.logs.autoSave} />
+                            固定ファイル名
+                          </label>
+                          <input type="text" value={settings.logs.fixedName} onChange={e => setSettings({ ...settings, logs: { ...settings.logs, fixedName: e.target.value } })} disabled={!settings.logs.autoSave || settings.logs.fileNameSetting !== 'fixed'} style={{ flex: 1 }} />
+                        </div>
+
+                        <div style={{ marginTop: '12px' }}>
+                          <label className="checkbox-label">
+                            <input type="radio" checked={settings.logs.fileNameSetting === 'dated'} onChange={() => setSettings({ ...settings, logs: { ...settings.logs, fileNameSetting: 'dated' } })} disabled={!settings.logs.autoSave} />
+                            年月日を付ける 例: ExPing130502.LOG
+                          </label>
+                          <div className="ng-nested-row" style={{ marginLeft: '24px', marginTop: '8px', gap: '20px' }}>
+                            <div className="ng-field-row">
+                              <label style={{ minWidth: 'auto' }}>接頭語:</label>
+                              <input type="text" value={settings.logs.prefix} onChange={e => setSettings({ ...settings, logs: { ...settings.logs, prefix: e.target.value } })} disabled={!settings.logs.autoSave || settings.logs.fileNameSetting !== 'dated'} style={{ width: '100px' }} />
+                            </div>
+                            <div className="ng-field-row">
+                              <label style={{ minWidth: 'auto' }}>拡張子:</label>
+                              <input type="text" value={settings.logs.extension} onChange={e => setSettings({ ...settings, logs: { ...settings.logs, extension: e.target.value } })} disabled={!settings.logs.autoSave || settings.logs.fileNameSetting !== 'dated'} style={{ width: '80px' }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1025,6 +1138,45 @@ function App() {
           {formatDate(currentTime)}
         </div>
       </div>
+
+      {activeAlert && (
+        <div className="alert-overlay">
+          <div className="alert-box modern">
+            <div className="alert-header">
+              <span className="alert-icon">⚠️</span>
+              <span className="alert-title">NG 発生通知</span>
+              <button className="alert-close-x" onClick={() => setActiveAlert(null)}>✕</button>
+            </div>
+            <div className="alert-body">
+              <div className="alert-main-icon pulse">
+                <svg viewBox="0 0 24 24" width="64" height="64" fill="var(--error)">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                </svg>
+              </div>
+              <div className="alert-content">
+                <div className="alert-message">以下のターゲットで異常を検知しました</div>
+                <div className="alert-details">
+                  <div className="alert-detail-row">
+                    <span className="label">日時</span>
+                    <span className="value">{activeAlert.timestamp}</span>
+                  </div>
+                  <div className="alert-detail-row">
+                    <span className="label">対象</span>
+                    <span className="value">{activeAlert.target}</span>
+                  </div>
+                  <div className="alert-detail-row">
+                    <span className="label">理由</span>
+                    <span className="value error-text">{activeAlert.reason}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="alert-actions">
+                <button className="alert-ok-button" onClick={() => setActiveAlert(null)}>閉じる</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
