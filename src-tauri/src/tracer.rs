@@ -11,7 +11,7 @@ use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
 use std::time::Duration;
-use surge_ping::{Client, Config, PingIdentifier, PingSequence};
+use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 use udp::UDPTracer;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -92,7 +92,10 @@ impl Tracer {
         let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
 
         // Generic client for reachability check
-        let config = Config::default();
+        let config = match self.ip {
+            IpAddr::V4(_) => Config::builder().kind(ICMP::V4).build(),
+            IpAddr::V6(_) => Config::builder().kind(ICMP::V6).build(),
+        };
         let client = Client::new(&config).map_err(|e| e.to_string())?;
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
         pinger.timeout(self.timeout);
