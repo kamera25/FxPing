@@ -645,7 +645,7 @@ function App() {
         {showSettings && (
           <div className="settings-container" style={{ padding: 0 }}>
             <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
-              <h2 style={{ fontSize: '16px', color: 'var(--primary)', margin: 0 }}>環境設定</h2>
+              <h2 style={{ fontSize: '16px', color: 'var(--primary)', margin: 0 }}>設定</h2>
               <button className="btn-small" onClick={() => setShowSettings(false)}>閉じる</button>
             </div>
 
