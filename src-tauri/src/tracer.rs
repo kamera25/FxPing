@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::str::FromStr;
 use std::time::Duration;
-use surge_ping::{Client, Config, IcmpPacket, PingIdentifier, PingSequence};
+use surge_ping::{Client, Config, PingIdentifier, PingSequence};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceHop {
     pub ttl: u32,
-    pub ip: String,
+    pub ip: Option<IpAddr>,
     pub fqdn: Option<String>,
     pub time_ms: Option<f64>,
 }
@@ -93,30 +93,26 @@ impl Tracer {
                 match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
                     Ok((packet, duration)) => {
                         let hop_ip = match packet {
-                            IcmpPacket::V4(p) => p.get_real_dest().to_string(),
-                            IcmpPacket::V6(p) => p.get_real_dest().to_string(),
+                            surge_ping::IcmpPacket::V4(p) => p.get_real_dest().into(),
+                            surge_ping::IcmpPacket::V6(p) => p.get_real_dest().into(),
                         };
-                        let hop_ip_str = hop_ip.clone();
-                        let fqdn = match IpAddr::from_str(&hop_ip_str) {
-                            Ok(addr) => dns_lookup::lookup_addr(&addr).ok(),
-                            Err(_) => None,
-                        };
+                        let fqdn = dns_lookup::lookup_addr(&hop_ip).ok();
 
                         hops.push(TraceHop {
                             ttl,
-                            ip: hop_ip,
+                            ip: Some(hop_ip),
                             fqdn,
                             time_ms: Some(duration.as_secs_f64() * 1000.0),
                         });
 
-                        if hop_ip_str == self.ip.to_string() {
+                        if hop_ip == self.ip {
                             break;
                         }
                     }
                     Err(_) => {
                         hops.push(TraceHop {
                             ttl,
-                            ip: "*".to_string(),
+                            ip: None,
                             fqdn: None,
                             time_ms: None,
                         });
@@ -156,12 +152,13 @@ impl Tracer {
                                 if parts.len() >= 2 && parts[1] == "*" {
                                     hops.push(TraceHop {
                                         ttl,
-                                        ip: "*".to_string(),
+                                        ip: None,
                                         fqdn: None,
                                         time_ms: None,
                                     });
                                 } else if parts.len() >= 3 {
-                                    let hop_ip = parts[1].to_string();
+                                    let hop_ip_str = parts[1].to_string();
+                                    let hop_ip = IpAddr::from_str(&hop_ip_str).ok();
                                     let mut time_ms = None;
                                     // find "ms" index and parse preceding element as time
                                     for i in 2..parts.len() {
@@ -171,19 +168,17 @@ impl Tracer {
                                         }
                                     }
 
-                                    let fqdn = match IpAddr::from_str(&hop_ip) {
-                                        Ok(addr) => dns_lookup::lookup_addr(&addr).ok(),
-                                        Err(_) => None,
-                                    };
+                                    let fqdn =
+                                        hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok());
 
                                     hops.push(TraceHop {
                                         ttl,
-                                        ip: hop_ip.clone(),
+                                        ip: hop_ip,
                                         fqdn,
                                         time_ms,
                                     });
 
-                                    if hop_ip == target_ip {
+                                    if hop_ip_str == target_ip {
                                         break;
                                     }
                                 }
@@ -210,5 +205,54 @@ impl Tracer {
             hops,
             timestamp,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_tracer_new_valid() {
+        let tracer = Tracer::new("127.0.0.1".to_string(), 1000, 32, 30, "ICMP".to_string()).await;
+        assert!(tracer.is_ok());
+        let tracer = tracer.unwrap();
+        assert_eq!(tracer.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
+        assert_eq!(tracer.max_hops, 30);
+        assert_eq!(tracer.protocol, "ICMP");
+    }
+
+    #[tokio::test]
+    async fn test_tracer_new_invalid() {
+        let tracer = Tracer::new(
+            "invalid...host".to_string(),
+            1000,
+            32,
+            30,
+            "ICMP".to_string(),
+        )
+        .await;
+        assert!(tracer.is_err());
+    }
+
+    #[test]
+    fn test_trace_result_serialization() {
+        let hop = TraceHop {
+            ttl: 1,
+            ip: Some("192.168.1.1".parse().unwrap()),
+            fqdn: Some("router.local".to_string()),
+            time_ms: Some(1.23),
+        };
+        let result = TraceResult {
+            target: "8.8.8.8".to_string(),
+            ping_ok: true,
+            hops: vec![hop],
+            timestamp: "2024/01/01 12:00:00".to_string(),
+        };
+
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"target\":\"8.8.8.8\""));
+        assert!(json.contains("\"ttl\":1"));
+        assert!(json.contains("\"fqdn\":\"router.local\""));
     }
 }

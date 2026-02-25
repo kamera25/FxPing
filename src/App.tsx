@@ -593,7 +593,7 @@ function App() {
             content += `Target: ${res.target} (${res.timestamp})\n`;
             content += `Ping: ${res.ping_ok ? "OK" : "NG"}\n`;
             res.hops.forEach(h => {
-              content += `${h.ttl}\t${h.ip}\t${h.time_ms !== null ? h.time_ms.toFixed(2) + "ms" : "*"}\n`;
+              content += `${h.ttl}\t${h.ip || "*"}\t${h.time_ms !== null ? h.time_ms.toFixed(2) + "ms" : "*"}\n`;
             });
             content += "----------------------------------------\n";
           });
