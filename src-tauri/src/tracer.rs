@@ -1,8 +1,8 @@
 mod icmp;
 mod udp;
 
-use crate::hop::Hop;
-use crate::host::Host;
+use crate::tcpip::hop::Hop;
+use crate::tcpip::host::Host;
 use chrono::Local;
 use icmp::ICMPTracer;
 use serde::{Deserialize, Serialize};

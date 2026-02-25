@@ -1,4 +1,4 @@
-use crate::hop::Hop;
+use crate::tcpip::hop::Hop;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
 use std::str::FromStr;

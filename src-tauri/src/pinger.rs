@@ -1,4 +1,4 @@
-use crate::host::Host;
+use crate::tcpip::host::Host;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;

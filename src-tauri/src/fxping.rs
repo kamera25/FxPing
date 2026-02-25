@@ -2,14 +2,13 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
 
-mod hop;
-mod host;
 mod pinger;
+mod tcpip;
 mod tracer;
 
-use hop::Hop;
-use host::Host;
 use pinger::{PingResult, Pinger};
+use tcpip::hop::Hop;
+use tcpip::host::Host;
 use tracer::Tracer;
 
 #[tauri::command]
