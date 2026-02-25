@@ -164,6 +164,13 @@ function App() {
   const [exPingText, setExPingText] = useState("");
   const [isInputError, setIsInputError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottom = useRef(true);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const threshold = 10;
+    isAtBottom.current = scrollHeight - scrollTop - clientHeight < threshold;
+  };
   const selectFile = async (type: 'sound' | 'program') => {
     try {
       const selected = await open({
@@ -499,7 +506,7 @@ function App() {
   }, [isPinging, targets, settings]);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && isAtBottom.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [results]);
@@ -1027,7 +1034,7 @@ function App() {
               <button onClick={() => { setResults([]); setTargetStats({}); }}>履歴クリア</button>
             </div>
 
-            <div className="table-container" ref={scrollRef}>
+            <div className="table-container" ref={scrollRef} onScroll={handleScroll}>
               <table>
                 <thead>
                   <tr>
