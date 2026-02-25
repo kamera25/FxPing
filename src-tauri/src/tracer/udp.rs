@@ -1,17 +1,17 @@
 use crate::tcpip::hop::Hop;
+use crate::tcpip::timeout::Timeout;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
 use std::str::FromStr;
-use std::time::Duration;
 
 pub struct UDPTracer {
     ip: IpAddr,
-    timeout: Duration,
+    timeout: Timeout,
     max_hops: Hop,
 }
 
 impl UDPTracer {
-    pub fn new(ip: IpAddr, timeout: Duration, max_hops: Hop) -> Self {
+    pub fn new(ip: IpAddr, timeout: Timeout, max_hops: Hop) -> Self {
         Self {
             ip,
             timeout,
@@ -60,7 +60,7 @@ impl TracerImpl for UDPTracer {
             #[cfg(windows)]
             {
                 let ip = self.ip;
-                let timeout = self.timeout;
+                let timeout = self.timeout.value();
                 let max_hops = self.max_hops.value();
 
                 tokio::task::spawn_blocking(move || {
@@ -215,7 +215,7 @@ mod tests {
     #[test]
     fn test_udp_tracer_new() {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-        let timeout = Duration::from_secs(1);
+        let timeout = Timeout::new(1000).unwrap();
         let max_hops = Hop::new(30).unwrap();
         let tracer = UDPTracer::new(ip, timeout, max_hops);
 
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn test_udp_tracer_new_ipv6() {
         let ip = "::1".parse::<IpAddr>().unwrap();
-        let timeout = Duration::from_secs(1);
+        let timeout = Timeout::new(1000).unwrap();
         let max_hops = Hop::new(30).unwrap();
         let tracer = UDPTracer::new(ip, timeout, max_hops);
 

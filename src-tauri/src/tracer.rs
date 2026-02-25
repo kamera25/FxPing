@@ -4,13 +4,13 @@ mod udp;
 use crate::tcpip::hop::Hop;
 use crate::tcpip::host::Host;
 use crate::tcpip::payload_size::PayloadSize;
+use crate::tcpip::timeout::Timeout;
 use chrono::Local;
 use icmp::ICMPTracer;
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
-use std::time::Duration;
 use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 use udp::UDPTracer;
 
@@ -39,7 +39,7 @@ pub trait TracerImpl: Send + Sync {
 pub struct Tracer {
     target: String,
     ip: IpAddr,
-    timeout: Duration,
+    timeout: Timeout,
     payload_size: PayloadSize,
     inner: Box<dyn TracerImpl>,
 }
@@ -53,6 +53,7 @@ impl Tracer {
         protocol: String,
     ) -> Result<Self, String> {
         let payload_size = PayloadSize::new(payload_size)?;
+        let timeout = Timeout::new(timeout_ms)?;
         let host = Host::new(&target)?;
         let target_str = host.to_string();
 
@@ -72,7 +73,6 @@ impl Tracer {
             }
         };
 
-        let timeout = Duration::from_millis(timeout_ms);
         let inner: Box<dyn TracerImpl> = if protocol == "ICMP" {
             Box::new(ICMPTracer::new(ip, timeout, payload_size, max_hops))
         } else {
@@ -98,7 +98,7 @@ impl Tracer {
         };
         let client = Client::new(&config).map_err(|e| e.to_string())?;
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
-        pinger.timeout(self.timeout);
+        pinger.timeout(self.timeout.value());
         let payload = vec![0u8; self.payload_size.value()];
         let ping_ok = pinger.ping(PingSequence(0), &payload).await.is_ok();
 

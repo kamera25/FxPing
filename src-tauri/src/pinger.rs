@@ -1,9 +1,9 @@
 use crate::tcpip::host::Host;
 use crate::tcpip::payload_size::PayloadSize;
+use crate::tcpip::timeout::Timeout;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-use std::time::Duration;
 use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -19,13 +19,14 @@ pub struct PingResult {
 pub struct Pinger {
     target: String,
     ip: IpAddr,
-    timeout: Duration,
+    timeout: Timeout,
     payload_size: PayloadSize,
 }
 
 impl Pinger {
     pub async fn new(target: String, timeout_ms: u64, payload_size: usize) -> Result<Self, String> {
         let payload_size = PayloadSize::new(payload_size)?;
+        let timeout = Timeout::new(timeout_ms)?;
         let host = Host::new(&target)?;
         let target_str = host.to_string();
 
@@ -48,7 +49,7 @@ impl Pinger {
         Ok(Self {
             target,
             ip,
-            timeout: Duration::from_millis(timeout_ms),
+            timeout,
             payload_size,
         })
     }
@@ -61,7 +62,7 @@ impl Pinger {
         let client = Client::new(&config).map_err(|e| e.to_string())?;
 
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
-        pinger.timeout(self.timeout);
+        pinger.timeout(self.timeout.value());
 
         let payload = vec![0u8; self.payload_size.value()];
         let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
@@ -104,7 +105,7 @@ mod tests {
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
-        assert_eq!(pinger.timeout, Duration::from_millis(1000));
+        assert_eq!(pinger.timeout.as_millis(), 1000);
         assert_eq!(pinger.payload_size.value(), 32);
     }
 
@@ -114,7 +115,7 @@ mod tests {
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "::1".parse::<IpAddr>().unwrap());
-        assert_eq!(pinger.timeout, Duration::from_millis(1000));
+        assert_eq!(pinger.timeout.as_millis(), 1000);
         assert_eq!(pinger.payload_size.value(), 32);
     }
 
