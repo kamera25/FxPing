@@ -16,10 +16,10 @@ pub struct PingResult {
 }
 
 pub struct Pinger {
-    pub target: String,
-    pub ip: IpAddr,
-    pub timeout: Duration,
-    pub payload_size: usize,
+    target: String,
+    ip: IpAddr,
+    timeout: Duration,
+    payload_size: usize,
 }
 
 impl Pinger {
