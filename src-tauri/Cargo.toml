@@ -24,9 +24,16 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 surge-ping = "0.8.4"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time", "net", "macros", "process"] }
 chrono = { version = "0.4", features = ["serde"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 dns-lookup = "2.0"
+
+[profile.release]
+panic = "abort" # パニック時にスタックトレースを生成せず、即座に終了する（サイズ削減）
+codegen-units = 1 # コンパイル時間は長くなりますが、より強力に最適化されます
+lto = true # リンク時最適化（Link Time Optimization）を有効化
+opt-level = "s" # または "z"。バイナリサイズを最小化するための最適化レベル
+strip = true # デバッグシンボルを削除する（サイズが大幅に減ります）
 
