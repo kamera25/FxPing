@@ -29,6 +29,7 @@ chrono = { version = "0.4", features = ["serde"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 dns-lookup = "2.0"
+socket2 = { version = "0.6.2", features = ["all"] }
 
 [profile.release]
 panic = "abort" # パニック時にスタックトレースを生成せず、即座に終了する（サイズ削減）

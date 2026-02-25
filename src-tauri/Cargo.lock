@@ -10,6 +10,7 @@ dependencies = [
  "dns-lookup",
  "serde",
  "serde_json",
+ "socket2",
  "surge-ping",
  "tauri",
  "tauri-build",
