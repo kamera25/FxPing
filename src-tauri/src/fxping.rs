@@ -83,6 +83,32 @@ fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
     std::fs::read(&path).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn is_admin() -> bool {
+    #[cfg(windows)]
+    {
+        // On Windows, checking if we have admin privileges by trying to open the SCManager
+        // or by using "net session" (which is usually what people use in scripts).
+        // Another common way is to check if we can open the physical drive for reading.
+        // But a simple way is to use "net session" and check the exit code.
+        std::process::Command::new("net")
+            .arg("session")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+    #[cfg(unix)]
+    {
+        // On Unix, check if the effective user ID is 0 (root).
+        // However, traceroute often doesn't need root if it's suid or uses capabilities.
+        // For UDP traceroute, it depends on the system.
+        // In many cases, it's safer to just return true for Unix unless specifically restricted.
+        unsafe { libc::getuid() == 0 }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -96,7 +122,8 @@ pub fn run() {
             save_targets,
             save_text_file,
             get_platform,
-            read_file_bytes
+            read_file_bytes,
+            is_admin
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

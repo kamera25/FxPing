@@ -1133,26 +1133,34 @@ function App() {
                 {isTracing ? "追跡中..." : "▶ TraceRoute 開始"}
               </button>
 
-              {platform !== "windows" && (
-                <div className="input-group" style={{ width: 'auto' }}>
-                  <span style={{ fontSize: '12px', opacity: 0.7 }}>プロトコル:</span>
-                  <select
-                    value={traceProtocol}
-                    onChange={(e) => setTraceProtocol(e.target.value as 'ICMP' | 'UDP')}
-                    disabled={isTracing}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      background: 'var(--bg-secondary)',
-                      color: 'white',
-                      border: '1px solid var(--border)'
-                    }}
-                  >
-                    <option value="ICMP">ICMP</option>
-                    <option value="UDP">UDP</option>
-                  </select>
-                </div>
-              )}
+              <div className="input-group" style={{ width: 'auto' }}>
+                <span style={{ fontSize: '12px', opacity: 0.7 }}>プロトコル:</span>
+                <select
+                  value={traceProtocol}
+                  onChange={async (e) => {
+                    const proto = e.target.value as 'ICMP' | 'UDP';
+                    if (proto === 'UDP' && platform === 'windows') {
+                      const admin = await invoke<boolean>("is_admin");
+                      if (!admin) {
+                        alert("Windows UDP Traceroute実行には管理者権限が必要です。管理者権限で実行してください。");
+                        return;
+                      }
+                    }
+                    setTraceProtocol(proto);
+                  }}
+                  disabled={isTracing}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    background: 'var(--bg-secondary)',
+                    color: 'white',
+                    border: '1px solid var(--border)'
+                  }}
+                >
+                  <option value="ICMP">ICMP</option>
+                  <option value="UDP">UDP</option>
+                </select>
+              </div>
 
               <button onClick={() => setTraceResults([])}>履歴クリア</button>
             </div>
