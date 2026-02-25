@@ -250,22 +250,22 @@ function App() {
     }
   };
 
-  const handleExPingApply = async () => {
-    const lines = exPingText.split('\n');
+  const parseExPingContent = async (text: string) => {
+    const lines = text.split('\n');
     const newTargets: Target[] = [];
     const invalidHosts: string[] = [];
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("‘")) continue;
+      if (!trimmed || trimmed.startsWith("‘") || trimmed.startsWith("'")) continue;
 
       let host = trimmed;
       let remarks = "";
 
       if (trimmed.includes(" ")) {
-        const parts = trimmed.split(" ");
-        host = parts[0].trim();
-        remarks = parts[1].trim();
+        const firstSpace = trimmed.indexOf(" ");
+        host = trimmed.slice(0, firstSpace).trim();
+        remarks = trimmed.slice(firstSpace + 1).trim();
       }
 
       if (host) {
@@ -277,7 +277,10 @@ function App() {
         }
       }
     }
+    return { newTargets, invalidHosts };
+  };
 
+  const applyParsedTargets = (newTargets: Target[], invalidHosts: string[]) => {
     if (invalidHosts.length > 0) {
       alert(`The following targets were skipped due to validation errors:\n${invalidHosts.join('\n')}`);
     }
@@ -289,8 +292,39 @@ function App() {
     }
   };
 
+  const handleExPingApply = async () => {
+    const { newTargets, invalidHosts } = await parseExPingContent(exPingText);
+    applyParsedTargets(newTargets, invalidHosts);
+  };
+
+  const handleTargetListDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const content = event.target?.result;
+        if (typeof content === 'string') {
+          const { newTargets, invalidHosts } = await parseExPingContent(content);
+          applyParsedTargets(newTargets, invalidHosts);
+        }
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    const text = e.dataTransfer.getData("text");
+    if (text) {
+      parseExPingContent(text).then(({ newTargets, invalidHosts }) => {
+        applyParsedTargets(newTargets, invalidHosts);
+      });
+    }
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
 
     // Handle file drop
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -890,7 +924,13 @@ function App() {
         )}
 
         {!showSettings && activeTab === 'targets' && (
-          <div className="target-list">
+          <div
+            className="target-list"
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={(e) => e.preventDefault()}
+            onDrop={handleTargetListDrop}
+            style={{ minHeight: '300px' }}
+          >
             <div className={`toolbar ${isInputError ? 'shake-animation' : ''}`} style={{ margin: '0 0 16px 0', borderRadius: '4px' }}>
               <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
