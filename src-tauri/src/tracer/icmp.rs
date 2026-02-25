@@ -3,7 +3,7 @@ use crate::tcpip::payload_size::PayloadSize;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
 use std::time::Duration;
-use surge_ping::{Client, Config, PingIdentifier, PingSequence};
+use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 
 pub struct ICMPTracer {
     ip: IpAddr,
@@ -30,7 +30,11 @@ impl TracerImpl for ICMPTracer {
             let payload = vec![0u8; self.payload_size.value()];
 
             for ttl in 1..=self.max_hops.value() {
-                let hop_config = Config::builder().ttl(ttl as u32).build();
+                let builder = Config::builder().ttl(ttl as u32);
+                let hop_config = match self.ip {
+                    IpAddr::V4(_) => builder.kind(ICMP::V4).build(),
+                    IpAddr::V6(_) => builder.kind(ICMP::V6).build(),
+                };
                 let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
                 let mut hop_pinger = hop_client.pinger(self.ip, PingIdentifier(ttl as u16)).await;
                 hop_pinger.timeout(self.timeout);
@@ -77,6 +81,20 @@ mod tests {
     #[test]
     fn test_icmp_tracer_new() {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+        let timeout = Duration::from_secs(1);
+        let payload_size = PayloadSize::new(32).unwrap();
+        let max_hops = Hop::new(30).unwrap();
+        let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops);
+
+        assert_eq!(tracer.ip, ip);
+        assert_eq!(tracer.timeout, timeout);
+        assert_eq!(tracer.payload_size, payload_size);
+        assert_eq!(tracer.max_hops, max_hops);
+    }
+
+    #[test]
+    fn test_icmp_tracer_new_ipv6() {
+        let ip = "::1".parse::<IpAddr>().unwrap();
         let timeout = Duration::from_secs(1);
         let payload_size = PayloadSize::new(32).unwrap();
         let max_hops = Hop::new(30).unwrap();

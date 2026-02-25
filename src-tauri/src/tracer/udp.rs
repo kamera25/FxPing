@@ -28,7 +28,12 @@ impl TracerImpl for UDPTracer {
                 let timeout_secs = (self.timeout.as_millis() / 1000).max(1);
                 let target_ip = self.ip.to_string();
 
-                let output = tokio::process::Command::new("traceroute")
+                let cmd = match self.ip {
+                    IpAddr::V4(_) => "traceroute",
+                    IpAddr::V6(_) => "traceroute6",
+                };
+
+                let output = tokio::process::Command::new(cmd)
                     .arg("-n")
                     .arg("-q")
                     .arg("1")
@@ -124,6 +129,18 @@ mod tests {
     }
 
     #[test]
+    fn test_udp_tracer_new_ipv6() {
+        let ip = "::1".parse::<IpAddr>().unwrap();
+        let timeout = Duration::from_secs(1);
+        let max_hops = Hop::new(30).unwrap();
+        let tracer = UDPTracer::new(ip, timeout, max_hops);
+
+        assert_eq!(tracer.ip, ip);
+        assert_eq!(tracer.timeout, timeout);
+        assert_eq!(tracer.max_hops, max_hops);
+    }
+
+    #[test]
     #[cfg(unix)]
     fn test_parse_traceroute_output() {
         let target_ip = "8.8.8.8";
@@ -146,6 +163,35 @@ mod tests {
 
         assert_eq!(hops[2].ttl, 3);
         assert_eq!(hops[2].ip, Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))));
+        assert_eq!(hops[2].time_ms, Some(10.2));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_parse_traceroute_output_ipv6() {
+        let target_ip = "2001:4860:4860::8888";
+        let stdout = r#"
+1  2001:db8::1  0.5 ms
+2  *
+3  2001:4860:4860::8888  10.2 ms
+"#;
+        let hops = parse_traceroute_output(stdout, target_ip);
+
+        assert_eq!(hops.len(), 3);
+
+        assert_eq!(hops[0].ttl, 1);
+        assert_eq!(hops[0].ip, Some("2001:db8::1".parse::<IpAddr>().unwrap()));
+        assert_eq!(hops[0].time_ms, Some(0.5));
+
+        assert_eq!(hops[1].ttl, 2);
+        assert_eq!(hops[1].ip, None);
+        assert_eq!(hops[1].time_ms, None);
+
+        assert_eq!(hops[2].ttl, 3);
+        assert_eq!(
+            hops[2].ip,
+            Some("2001:4860:4860::8888".parse::<IpAddr>().unwrap())
+        );
         assert_eq!(hops[2].time_ms, Some(10.2));
     }
 }

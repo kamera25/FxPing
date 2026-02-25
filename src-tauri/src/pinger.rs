@@ -4,7 +4,7 @@ use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::time::Duration;
-use surge_ping::{Client, Config, PingIdentifier, PingSequence};
+use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PingResult {
@@ -54,7 +54,10 @@ impl Pinger {
     }
 
     pub async fn ping(&self, remarks: String) -> Result<PingResult, String> {
-        let config = Config::default();
+        let config = match self.ip {
+            IpAddr::V4(_) => Config::builder().kind(ICMP::V4).build(),
+            IpAddr::V6(_) => Config::builder().kind(ICMP::V6).build(),
+        };
         let client = Client::new(&config).map_err(|e| e.to_string())?;
 
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
@@ -101,6 +104,16 @@ mod tests {
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
+        assert_eq!(pinger.timeout, Duration::from_millis(1000));
+        assert_eq!(pinger.payload_size.value(), 32);
+    }
+
+    #[tokio::test]
+    async fn test_pinger_new_valid_ipv6() {
+        let pinger = Pinger::new("::1".to_string(), 1000, 32).await;
+        assert!(pinger.is_ok());
+        let pinger = pinger.unwrap();
+        assert_eq!(pinger.ip, "::1".parse::<IpAddr>().unwrap());
         assert_eq!(pinger.timeout, Duration::from_millis(1000));
         assert_eq!(pinger.payload_size.value(), 32);
     }
