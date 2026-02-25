@@ -1,6 +1,7 @@
 mod icmp;
 mod udp;
 
+use crate::hop::Hop;
 use crate::host::Host;
 use chrono::Local;
 use icmp::ICMPTracer;
@@ -47,7 +48,7 @@ impl Tracer {
         target: String,
         timeout_ms: u64,
         payload_size: usize,
-        max_hops: u32,
+        max_hops: Hop,
         protocol: String,
     ) -> Result<Self, String> {
         let host = Host::new(&target)?;
@@ -113,19 +114,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_tracer_new_valid() {
-        let tracer = Tracer::new("127.0.0.1".to_string(), 1000, 32, 30, "ICMP".to_string()).await;
+        let hops = Hop::new(30).unwrap();
+        let tracer = Tracer::new("127.0.0.1".to_string(), 1000, 32, hops, "ICMP".to_string()).await;
         assert!(tracer.is_ok());
         let tracer = tracer.unwrap();
         assert_eq!(tracer.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
     }
 
     #[tokio::test]
-    async fn test_tracer_new_invalid() {
+    async fn test_tracer_new_invalid_host() {
+        let hops = Hop::new(30).unwrap();
         let tracer = Tracer::new(
             "invalid...host".to_string(),
             1000,
             32,
-            30,
+            hops,
             "ICMP".to_string(),
         )
         .await;

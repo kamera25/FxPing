@@ -1,3 +1,4 @@
+use crate::hop::Hop;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
 use std::time::Duration;
@@ -7,11 +8,11 @@ pub struct ICMPTracer {
     ip: IpAddr,
     timeout: Duration,
     payload_size: usize,
-    max_hops: u32,
+    max_hops: Hop,
 }
 
 impl ICMPTracer {
-    pub fn new(ip: IpAddr, timeout: Duration, payload_size: usize, max_hops: u32) -> Self {
+    pub fn new(ip: IpAddr, timeout: Duration, payload_size: usize, max_hops: Hop) -> Self {
         Self {
             ip,
             timeout,
@@ -27,7 +28,7 @@ impl TracerImpl for ICMPTracer {
             let mut hops = Vec::new();
             let payload = vec![0u8; self.payload_size];
 
-            for ttl in 1..=self.max_hops {
+            for ttl in 1..=self.max_hops.value() {
                 let hop_config = Config::builder().ttl(ttl as u32).build();
                 let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
                 let mut hop_pinger = hop_client.pinger(self.ip, PingIdentifier(ttl as u16)).await;
@@ -77,7 +78,7 @@ mod tests {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let timeout = Duration::from_secs(1);
         let payload_size = 32;
-        let max_hops = 30;
+        let max_hops = Hop::new(30).unwrap();
         let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops);
 
         assert_eq!(tracer.ip, ip);

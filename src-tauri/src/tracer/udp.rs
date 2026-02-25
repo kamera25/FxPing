@@ -1,3 +1,4 @@
+use crate::hop::Hop;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
 use std::str::FromStr;
@@ -6,11 +7,11 @@ use std::time::Duration;
 pub struct UDPTracer {
     ip: IpAddr,
     timeout: Duration,
-    max_hops: u32,
+    max_hops: Hop,
 }
 
 impl UDPTracer {
-    pub fn new(ip: IpAddr, timeout: Duration, max_hops: u32) -> Self {
+    pub fn new(ip: IpAddr, timeout: Duration, max_hops: Hop) -> Self {
         Self {
             ip,
             timeout,
@@ -34,7 +35,7 @@ impl TracerImpl for UDPTracer {
                     .arg("-w")
                     .arg(timeout_secs.to_string())
                     .arg("-m")
-                    .arg(self.max_hops.to_string())
+                    .arg(self.max_hops.value().to_string())
                     .arg(&target_ip)
                     .output()
                     .await;
@@ -114,7 +115,7 @@ mod tests {
     fn test_udp_tracer_new() {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let timeout = Duration::from_secs(1);
-        let max_hops = 30;
+        let max_hops = Hop::new(30).unwrap();
         let tracer = UDPTracer::new(ip, timeout, max_hops);
 
         assert_eq!(tracer.ip, ip);

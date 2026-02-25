@@ -2,10 +2,12 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
 
+mod hop;
 mod host;
 mod pinger;
 mod tracer;
 
+use hop::Hop;
 use host::Host;
 use pinger::{PingResult, Pinger};
 use tracer::Tracer;
@@ -30,7 +32,8 @@ async fn traceroute_target(
     max_hops: u32,
     protocol: String,
 ) -> Result<tracer::TraceResult, String> {
-    let tracer = Tracer::new(target, timeout_ms, payload_size, max_hops, protocol).await?;
+    let hops = Hop::new(max_hops)?;
+    let tracer = Tracer::new(target, timeout_ms, payload_size, hops, protocol).await?;
     tracer.trace().await
 }
 
