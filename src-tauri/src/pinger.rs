@@ -1,4 +1,5 @@
 use crate::tcpip::host::Host;
+use crate::tcpip::payload_size::PayloadSize;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
@@ -19,11 +20,12 @@ pub struct Pinger {
     target: String,
     ip: IpAddr,
     timeout: Duration,
-    payload_size: usize,
+    payload_size: PayloadSize,
 }
 
 impl Pinger {
     pub async fn new(target: String, timeout_ms: u64, payload_size: usize) -> Result<Self, String> {
+        let payload_size = PayloadSize::new(payload_size)?;
         let host = Host::new(&target)?;
         let target_str = host.to_string();
 
@@ -58,7 +60,7 @@ impl Pinger {
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
         pinger.timeout(self.timeout);
 
-        let payload = vec![0u8; self.payload_size];
+        let payload = vec![0u8; self.payload_size.value()];
         let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
 
         match pinger.ping(PingSequence(0), &payload).await {
@@ -100,7 +102,7 @@ mod tests {
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
         assert_eq!(pinger.timeout, Duration::from_millis(1000));
-        assert_eq!(pinger.payload_size, 32);
+        assert_eq!(pinger.payload_size.value(), 32);
     }
 
     #[tokio::test]

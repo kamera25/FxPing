@@ -3,6 +3,7 @@ mod udp;
 
 use crate::tcpip::hop::Hop;
 use crate::tcpip::host::Host;
+use crate::tcpip::payload_size::PayloadSize;
 use chrono::Local;
 use icmp::ICMPTracer;
 use serde::{Deserialize, Serialize};
@@ -39,7 +40,7 @@ pub struct Tracer {
     target: String,
     ip: IpAddr,
     timeout: Duration,
-    payload_size: usize,
+    payload_size: PayloadSize,
     inner: Box<dyn TracerImpl>,
 }
 
@@ -51,6 +52,7 @@ impl Tracer {
         max_hops: Hop,
         protocol: String,
     ) -> Result<Self, String> {
+        let payload_size = PayloadSize::new(payload_size)?;
         let host = Host::new(&target)?;
         let target_str = host.to_string();
 
@@ -94,7 +96,7 @@ impl Tracer {
         let client = Client::new(&config).map_err(|e| e.to_string())?;
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
         pinger.timeout(self.timeout);
-        let payload = vec![0u8; self.payload_size];
+        let payload = vec![0u8; self.payload_size.value()];
         let ping_ok = pinger.ping(PingSequence(0), &payload).await.is_ok();
 
         let hops = self.inner.trace().await?;
