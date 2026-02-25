@@ -1,10 +1,16 @@
+mod icmp;
+mod udp;
+
 use crate::host::Host;
 use chrono::Local;
+use icmp::ICMPTracer;
 use serde::{Deserialize, Serialize};
+use std::future::Future;
 use std::net::IpAddr;
-use std::str::FromStr;
+use std::pin::Pin;
 use std::time::Duration;
 use surge_ping::{Client, Config, PingIdentifier, PingSequence};
+use udp::UDPTracer;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceHop {
@@ -22,13 +28,18 @@ pub struct TraceResult {
     pub timestamp: String,
 }
 
+pub type TraceFuture<'a> = Pin<Box<dyn Future<Output = Result<Vec<TraceHop>, String>> + Send + 'a>>;
+
+pub trait TracerImpl: Send + Sync {
+    fn trace(&self) -> TraceFuture<'_>;
+}
+
 pub struct Tracer {
     target: String,
     ip: IpAddr,
     timeout: Duration,
     payload_size: usize,
-    max_hops: u32,
-    protocol: String,
+    inner: Box<dyn TracerImpl>,
 }
 
 impl Tracer {
@@ -58,146 +69,34 @@ impl Tracer {
             }
         };
 
+        let timeout = Duration::from_millis(timeout_ms);
+        let inner: Box<dyn TracerImpl> = if protocol == "ICMP" {
+            Box::new(ICMPTracer::new(ip, timeout, payload_size, max_hops))
+        } else {
+            Box::new(UDPTracer::new(ip, timeout, max_hops))
+        };
+
         Ok(Self {
             target,
             ip,
-            timeout: Duration::from_millis(timeout_ms),
+            timeout,
             payload_size,
-            max_hops,
-            protocol,
+            inner,
         })
     }
 
     pub async fn trace(&self) -> Result<TraceResult, String> {
         let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
+
+        // Generic client for reachability check
         let config = Config::default();
         let client = Client::new(&config).map_err(|e| e.to_string())?;
-
-        // First, check if reachable (always use ICMP for initial check)
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
         pinger.timeout(self.timeout);
         let payload = vec![0u8; self.payload_size];
-
         let ping_ok = pinger.ping(PingSequence(0), &payload).await.is_ok();
 
-        let mut hops = Vec::new();
-
-        if self.protocol == "ICMP" {
-            // Trace Route via ICMP
-            for ttl in 1..=self.max_hops {
-                let hop_config = Config::builder().ttl(ttl as u32).build();
-                let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
-                let mut hop_pinger = hop_client.pinger(self.ip, PingIdentifier(ttl as u16)).await;
-                hop_pinger.timeout(self.timeout);
-
-                match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
-                    Ok((packet, duration)) => {
-                        let hop_ip = match packet {
-                            surge_ping::IcmpPacket::V4(p) => p.get_real_dest().into(),
-                            surge_ping::IcmpPacket::V6(p) => p.get_real_dest().into(),
-                        };
-                        let fqdn = dns_lookup::lookup_addr(&hop_ip).ok();
-
-                        hops.push(TraceHop {
-                            ttl,
-                            ip: Some(hop_ip),
-                            fqdn,
-                            time_ms: Some(duration.as_secs_f64() * 1000.0),
-                        });
-
-                        if hop_ip == self.ip {
-                            break;
-                        }
-                    }
-                    Err(_) => {
-                        hops.push(TraceHop {
-                            ttl,
-                            ip: None,
-                            fqdn: None,
-                            time_ms: None,
-                        });
-                    }
-                }
-            }
-        } else {
-            // Trace Route via UDP
-            #[cfg(unix)]
-            {
-                let timeout_secs = (self.timeout.as_millis() / 1000).max(1);
-                let target_ip = self.ip.to_string();
-
-                // Run macOS/Linux system traceroute command
-                let output = tokio::process::Command::new("traceroute")
-                    .arg("-n") // Numeric mode (no reverse DNS)
-                    .arg("-q")
-                    .arg("1") // 1 probe per hop
-                    .arg("-w")
-                    .arg(timeout_secs.to_string())
-                    .arg("-m")
-                    .arg(self.max_hops.to_string())
-                    .arg(&target_ip)
-                    .output()
-                    .await;
-
-                match output {
-                    Ok(output) => {
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        for line in stdout.lines() {
-                            let parts: Vec<&str> = line.split_whitespace().collect();
-                            if parts.is_empty() {
-                                continue;
-                            }
-
-                            if let Ok(ttl) = parts[0].parse::<u32>() {
-                                if parts.len() >= 2 && parts[1] == "*" {
-                                    hops.push(TraceHop {
-                                        ttl,
-                                        ip: None,
-                                        fqdn: None,
-                                        time_ms: None,
-                                    });
-                                } else if parts.len() >= 3 {
-                                    let hop_ip_str = parts[1].to_string();
-                                    let hop_ip = IpAddr::from_str(&hop_ip_str).ok();
-                                    let mut time_ms = None;
-                                    // find "ms" index and parse preceding element as time
-                                    for i in 2..parts.len() {
-                                        if parts[i] == "ms" {
-                                            time_ms = parts[i - 1].parse::<f64>().ok();
-                                            break;
-                                        }
-                                    }
-
-                                    let fqdn =
-                                        hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok());
-
-                                    hops.push(TraceHop {
-                                        ttl,
-                                        ip: hop_ip,
-                                        fqdn,
-                                        time_ms,
-                                    });
-
-                                    if hop_ip_str == target_ip {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        return Err(format!(
-                            "UDP traceroute failed to execute system command: {}",
-                            e
-                        ));
-                    }
-                }
-            }
-            #[cfg(windows)]
-            {
-                return Err("UDP TraceRoute is not supported natively on Windows. Please use ICMP protocol instead.".to_string());
-            }
-        }
+        let hops = self.inner.trace().await?;
 
         Ok(TraceResult {
             target: self.target.clone(),
@@ -218,8 +117,6 @@ mod tests {
         assert!(tracer.is_ok());
         let tracer = tracer.unwrap();
         assert_eq!(tracer.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
-        assert_eq!(tracer.max_hops, 30);
-        assert_eq!(tracer.protocol, "ICMP");
     }
 
     #[tokio::test]
