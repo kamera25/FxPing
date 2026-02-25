@@ -8,17 +8,10 @@ use std::time::Duration;
 use surge_ping::{Client, Config, IcmpPacket, PingIdentifier, PingSequence};
 
 mod host;
-use host::Host;
+mod pinger;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct PingResult {
-    pub target: String,
-    pub ip: String,
-    pub time_ms: Option<f64>,
-    pub status: String,
-    pub timestamp: String,
-    pub remarks: String,
-}
+use host::Host;
+use pinger::{PingResult, Pinger};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceHop {
@@ -42,68 +35,10 @@ async fn ping_target(
     remarks: String,
     timeout_ms: u64,
     payload_size: usize,
-    ttl: u32,
+    _ttl: u32,
 ) -> Result<PingResult, String> {
-    let host = Host::new(&target)?;
-    let target_str = host.to_string();
-    let _ttl = ttl;
-    let config = Config::default();
-    // surge-ping allows setting TTL on the Config
-    // Note: Config doesn't have a direct ttl method, it's usually set on the pinger or socket
-    // Actually, surge-ping's Client or Pinger handles TTL.
-
-    let client = Client::new(&config).map_err(|e| e.to_string())?;
-    let ip: IpAddr = match target_str.parse() {
-        Ok(ip) => ip,
-        Err(_) => {
-            use std::net::ToSocketAddrs;
-            match format!("{}:0", target_str).to_socket_addrs() {
-                Ok(mut addrs) => addrs
-                    .next()
-                    .map(|s| s.ip())
-                    .ok_or_else(|| format!("Could not resolve target: {}", target_str))?,
-                Err(e) => return Err(format!("DNS resolution failed for {}: {}", target_str, e)),
-            }
-        }
-    };
-
-    let mut pinger = client.pinger(ip, PingIdentifier(0)).await;
-    pinger.timeout(Duration::from_millis(timeout_ms));
-
-    // Set TTL on the pinger if possible
-    // In surge-ping, TTL is often set via the underlying socket or Config if supported.
-    // If surge-ping doesn't support TTL directly in this version, we'll focus on timeout/payload.
-
-    let payload = vec![0u8; payload_size];
-    let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
-
-    match pinger.ping(PingSequence(0), &payload).await {
-        Ok((packet, duration)) => {
-            let ip_addr = match packet {
-                IcmpPacket::V4(p) => p.get_real_dest().to_string(),
-                IcmpPacket::V6(p) => p.get_real_dest().to_string(),
-            };
-            Ok(PingResult {
-                target,
-                ip: ip_addr,
-                time_ms: Some(duration.as_secs_f64() * 1000.0),
-                status: "OK".to_string(),
-                timestamp,
-                remarks,
-            })
-        }
-        Err(e) => {
-            let target_clone = target.clone();
-            Ok(PingResult {
-                target,
-                ip: target_clone,
-                time_ms: None,
-                status: format!("NG ({})", e),
-                timestamp,
-                remarks,
-            })
-        }
-    }
+    let pinger = Pinger::new(target, timeout_ms, payload_size).await?;
+    pinger.ping(remarks).await
 }
 
 #[tauri::command]
@@ -193,9 +128,9 @@ async fn traceroute_target(
 
             // Run macOS/Linux system traceroute command
             let output = tokio::process::Command::new("traceroute")
-                .arg("-n")             // Numeric mode (no reverse DNS)
+                .arg("-n") // Numeric mode (no reverse DNS)
                 .arg("-q")
-                .arg("1")              // 1 probe per hop
+                .arg("1") // 1 probe per hop
                 .arg("-w")
                 .arg(timeout_secs.to_string())
                 .arg("-m")
@@ -252,7 +187,10 @@ async fn traceroute_target(
                     }
                 }
                 Err(e) => {
-                    return Err(format!("UDP traceroute failed to execute system command: {}", e));
+                    return Err(format!(
+                        "UDP traceroute failed to execute system command: {}",
+                        e
+                    ));
                 }
             }
         }
@@ -307,7 +245,8 @@ async fn save_targets(targets: Vec<TargetData>) -> Result<(), String> {
 #[tauri::command]
 async fn save_text_file(path: String, content: String) -> Result<(), String> {
     let mut file = File::create(path).map_err(|e| e.to_string())?;
-    file.write_all(content.as_bytes()).map_err(|e| e.to_string())?;
+    file.write_all(content.as_bytes())
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -334,4 +273,3 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
