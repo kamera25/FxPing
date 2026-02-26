@@ -83,6 +83,7 @@ function App() {
   });
   const [platform, setPlatform] = useState<string>("");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [nextPingTimeMs, setNextPingTimeMs] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showExPingInput, setShowExPingInput] = useState(false);
   const [exPingText, setExPingText] = useState("");
@@ -312,6 +313,7 @@ function App() {
       let currentIteration = 0;
       let currentTargetIndex = 0;
       let isExecuting = false;
+      let lastPingTime = Date.now();
 
       const runPing = async () => {
         if (isExecuting) return;
@@ -460,14 +462,31 @@ function App() {
           console.error("Ping error", e);
         } finally {
           isExecuting = false;
+          lastPingTime = Date.now();
         }
       };
 
       runPing();
-      interval = setInterval(runPing, settings.interval);
-    }
+      const runPingAndReset = () => {
+        runPing();
+      };
+      interval = window.setInterval(runPingAndReset, settings.interval);
 
-    return () => clearInterval(interval);
+      const countdownTimer = window.setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - lastPingTime;
+        const remaining = Math.max(0, settings.interval - elapsed);
+        setNextPingTimeMs(remaining);
+      }, 100);
+
+      return () => {
+        clearInterval(interval);
+        clearInterval(countdownTimer);
+        setNextPingTimeMs(null);
+      };
+    } else {
+      setNextPingTimeMs(null);
+    }
   }, [isPinging, targets, settings]);
 
   useEffect(() => {
@@ -478,12 +497,28 @@ function App() {
 
   useEffect(() => {
     let periodicTimer: number | undefined;
+    let countdownTimer: number | undefined;
+
     if (settings.periodicExecution && !isPinging && isRunActive) {
+      const startTime = Date.now();
+      const waitMs = settings.periodicInterval * 1000;
+
       periodicTimer = window.setTimeout(() => {
         setIsPinging(true);
-      }, settings.periodicInterval * 1000);
+      }, waitMs);
+
+      countdownTimer = window.setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const remaining = Math.max(0, waitMs - elapsed);
+        setNextPingTimeMs(remaining);
+      }, 100);
     }
-    return () => clearTimeout(periodicTimer);
+
+    return () => {
+      clearTimeout(periodicTimer);
+      clearInterval(countdownTimer);
+    };
   }, [settings.periodicExecution, settings.periodicInterval, isPinging, isRunActive]);
 
   const handleSave = async () => {
@@ -663,7 +698,13 @@ function App() {
         )}
       </div>
 
-      <StatsBar targetCount={targets.length} resultCount={results.length} currentTime={currentTime} />
+      <StatsBar
+        targetCount={targets.length}
+        resultCount={results.length}
+        currentTime={currentTime}
+        nextPingTimeMs={nextPingTimeMs}
+        repeatMode={settings.repeatMode}
+      />
       <AlertOverlay activeAlert={activeAlert} setActiveAlert={setActiveAlert} />
     </div>
   );
