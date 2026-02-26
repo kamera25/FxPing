@@ -73,11 +73,11 @@ function App() {
       notifyOnIntervalOnly: false,
     },
     logs: {
-      autoSave: true,
-      savePath: "D:\\ping",
-      fileNameSetting: 'dated',
-      fixedName: "ExPing.log",
-      prefix: "ExPing",
+      autoSave: false,
+      savePath: "",
+      fileNameSetting: 'fixed',
+      fixedName: "FxPing.log",
+      prefix: "FxPing",
       extension: "LOG",
     }
   });
