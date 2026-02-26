@@ -4,7 +4,7 @@ import { Settings } from '../../types';
 interface LogSettingsProps {
     settings: Settings;
     setSettings: (settings: Settings) => void;
-    selectDir: () => Promise<void>;
+    selectDir: (target: 'ng' | 'logs') => Promise<void>;
 }
 
 const LogSettings: React.FC<LogSettingsProps> = ({ settings, setSettings, selectDir }) => {
@@ -37,7 +37,7 @@ const LogSettings: React.FC<LogSettingsProps> = ({ settings, setSettings, select
                         <label style={{ minWidth: '60px' }}>保存先:</label>
                         <div className="path-input-group">
                             <input type="text" value={settings.logs.savePath} onChange={e => setSettings({ ...settings, logs: { ...settings.logs, savePath: e.target.value } })} disabled={!settings.logs.autoSave} />
-                            <button className="btn-small" onClick={selectDir} disabled={!settings.logs.autoSave}>...</button>
+                            <button className="btn-small" onClick={() => selectDir('logs')} disabled={!settings.logs.autoSave}>...</button>
                         </div>
                     </div>
                 </div>

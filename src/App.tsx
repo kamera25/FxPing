@@ -117,7 +117,7 @@ function App() {
     }
   };
 
-  const selectDir = async () => {
+  const selectDir = async (target: 'ng' | 'logs' = 'ng') => {
     const { open } = await import("@tauri-apps/plugin-dialog");
     try {
       const selected = await open({
@@ -125,12 +125,17 @@ function App() {
         directory: true,
       });
       if (selected && !Array.isArray(selected)) {
-        setSettings({ ...settings, ng: { ...settings.ng, programWorkingDir: selected } });
+        if (target === 'ng') {
+          setSettings({ ...settings, ng: { ...settings.ng, programWorkingDir: selected } });
+        } else {
+          setSettings({ ...settings, logs: { ...settings.logs, savePath: selected } });
+        }
       }
     } catch (e) {
       console.error("Directory selection error", e);
     }
   };
+
 
   const playSound = async (filePath: string) => {
     if (!filePath) return;
