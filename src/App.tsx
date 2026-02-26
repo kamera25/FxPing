@@ -315,10 +315,20 @@ function App() {
         if (isExecuting) return;
         isExecuting = true;
 
-        if (settings.repeatCount > 0 && currentIteration >= settings.repeatCount) {
-          setIsPinging(false);
-          isExecuting = false;
-          return;
+        if (settings.repeatCount > 0) {
+          if (settings.repeatMode === 'sequential') {
+            if (currentTargetIndex >= targets.length) {
+              setIsPinging(false);
+              isExecuting = false;
+              return;
+            }
+          } else {
+            if (currentIteration >= settings.repeatCount) {
+              setIsPinging(false);
+              isExecuting = false;
+              return;
+            }
+          }
         }
 
         try {
@@ -335,11 +345,6 @@ function App() {
             if (currentIteration >= settings.repeatCount) {
               currentIteration = 0;
               currentTargetIndex++;
-              if (currentTargetIndex >= targets.length) {
-                setIsPinging(false);
-                isExecuting = false;
-                return;
-              }
             }
           } else if (settings.repeatMode === 'robin') {
             // Robin (A-B-A-B): One target per interval
@@ -470,11 +475,11 @@ function App() {
   useEffect(() => {
     let periodicTimer: number | undefined;
     if (settings.periodicExecution && !isPinging) {
-      periodicTimer = setInterval(() => {
+      periodicTimer = window.setTimeout(() => {
         setIsPinging(true);
-      }, settings.periodicInterval * 60 * 1000);
+      }, settings.periodicInterval * 1000);
     }
-    return () => clearInterval(periodicTimer);
+    return () => clearTimeout(periodicTimer);
   }, [settings.periodicExecution, settings.periodicInterval, isPinging]);
 
   const handleSave = async () => {

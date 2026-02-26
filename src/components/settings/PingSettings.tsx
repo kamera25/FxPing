@@ -124,7 +124,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                 </label>
                 <div className="field-row" style={{ marginTop: '10px', marginLeft: '24px' }}>
                     <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} />
-                    <span className="unit">分間隔</span>
+                    <span className="unit">秒待機</span>
                 </div>
             </div>
         </div>

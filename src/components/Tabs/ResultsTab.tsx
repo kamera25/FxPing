@@ -11,6 +11,20 @@ interface ResultsTabProps {
     handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
+const ResultRow = React.memo(({ res }: { res: PingResult }) => (
+    <tr>
+        <td className={res.status.startsWith("OK") ? "status-ok" : "status-ng"}>
+            {res.status.startsWith("OK") ? "● OK" : "✖ NG"}
+        </td>
+        <td>{res.timestamp}</td>
+        <td>{res.target}</td>
+        <td>{res.ip}</td>
+        <td>{res.time_ms !== null ? `${res.time_ms.toFixed(2)} ms` : "-"}</td>
+        <td style={{ opacity: 0.6, fontSize: '12px' }}>{res.status}</td>
+        <td>{res.remarks}</td>
+    </tr>
+));
+
 const ResultsTab: React.FC<ResultsTabProps> = ({
     isPinging,
     setIsPinging,
@@ -47,17 +61,7 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
                     </thead>
                     <tbody>
                         {results.map((res, i) => (
-                            <tr key={i}>
-                                <td className={res.status.startsWith("OK") ? "status-ok" : "status-ng"}>
-                                    {res.status.startsWith("OK") ? "● OK" : "✖ NG"}
-                                </td>
-                                <td>{res.timestamp}</td>
-                                <td>{res.target}</td>
-                                <td>{res.ip}</td>
-                                <td>{res.time_ms !== null ? `${res.time_ms.toFixed(2)} ms` : "-"}</td>
-                                <td style={{ opacity: 0.6, fontSize: '12px' }}>{res.status}</td>
-                                <td>{res.remarks}</td>
-                            </tr>
+                            <ResultRow key={i} res={res} />
                         ))}
                     </tbody>
                 </table>
