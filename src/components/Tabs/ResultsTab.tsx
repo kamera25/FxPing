@@ -1,4 +1,6 @@
 import React, { RefObject, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 import { PingResult } from '../../types';
 
 type TableSize = 'xsmall' | 'small' | 'medium' | 'large';
@@ -50,20 +52,23 @@ const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: 
                 style={{ opacity: 0.6, fontSize: tableSize === 'xsmall' ? '9px' : '12px', position: 'relative' }}
             >
                 {displayStatusText}
-                {showPopover && (
+                {showPopover && typeof document !== 'undefined' && createPortal(
                     <div
                         className="status-popover"
                         style={{
                             position: 'fixed',
                             left: `${popoverPos.x}px`,
                             top: `${popoverPos.y}px`,
+                            bottom: 'auto',
                             transform: 'translate(-50%, -100%)',
-                            marginTop: '-12px'
+                            marginTop: '-12px',
+                            zIndex: 10000 // Ensure it's above everything
                         }}
                     >
                         <div className="popover-content">{res.status}</div>
                         <div className="popover-arrow"></div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
             </td>
             <td>{res.remarks}</td>
