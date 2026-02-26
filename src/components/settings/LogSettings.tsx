@@ -72,8 +72,8 @@ const LogSettings: React.FC<LogSettingsProps> = ({ settings, setSettings, select
                         </div>
 
                         <div style={{ marginTop: '16px', padding: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', borderLeft: '4px solid #0078d4', opacity: settings.logs.autoSave ? 1 : 0.5 }}>
-                            <span style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>実際のファイル名 (プレビュー):</span>
-                            <code style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>{getActualFileName()}</code>
+                            <span style={{ fontSize: '12px', color: '#aaaaaaff', display: 'block', marginBottom: '4px' }}>実際のファイル名 (プレビュー):</span>
+                            <code style={{ fontSize: '14px', fontWeight: 'bold', color: '#c5c5c5ff' }}>{getActualFileName()}</code>
                         </div>
                     </div>
                 </div>
