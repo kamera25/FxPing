@@ -15,35 +15,85 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                     <div className="field-group">
                         <label>繰り返し回数:</label>
                         <div className="field-row">
-                            <input type="number" value={settings.repeatCount} onChange={e => setSettings({ ...settings, repeatCount: parseInt(e.target.value) || 0 })} />
+                            <input
+                                type="number"
+                                min={1}
+                                max={99999}
+                                value={settings.repeatCount}
+                                onChange={e => {
+                                    const val = Math.max(1, Math.min(99999, parseInt(e.target.value) || 1));
+                                    setSettings({ ...settings, repeatCount: val });
+                                }}
+                                title="UIの応答性とメモリリソースを考慮した1〜99,999回の範囲"
+                            />
                             <span className="unit">回</span>
                         </div>
                     </div>
                     <div className="field-group">
                         <label>実行間隔:</label>
                         <div className="field-row">
-                            <input type="number" value={settings.interval} onChange={e => setSettings({ ...settings, interval: parseInt(e.target.value) || 0 })} />
+                            <input
+                                type="number"
+                                min={100}
+                                max={60000}
+                                value={settings.interval}
+                                onChange={e => {
+                                    const val = Math.max(100, Math.min(60000, parseInt(e.target.value) || 100));
+                                    setSettings({ ...settings, interval: val });
+                                }}
+                                title="ICMPフラッディング（DOS攻撃と誤認されるリスク）を防止するための最小100ms制限"
+                            />
                             <span className="unit">ミリ秒</span>
                         </div>
                     </div>
                     <div className="field-group">
                         <label>ブロックサイズ:</label>
                         <div className="field-row">
-                            <input type="number" value={settings.payloadSize} onChange={e => setSettings({ ...settings, payloadSize: parseInt(e.target.value) || 0 })} />
+                            <input
+                                type="number"
+                                min={0}
+                                max={65507}
+                                value={settings.payloadSize}
+                                onChange={e => {
+                                    const val = Math.max(0, Math.min(65507, parseInt(e.target.value) || 0));
+                                    setSettings({ ...settings, payloadSize: val });
+                                }}
+                                title="IPv4最大パケットサイズ(65535)からIPヘッダ(20)とICMPヘッダ(8)を差し引いた65,507バイトが最大実効ペイロードサイズ"
+                            />
                             <span className="unit">バイト</span>
                         </div>
                     </div>
                     <div className="field-group">
                         <label>タイムアウト:</label>
                         <div className="field-row">
-                            <input type="number" value={settings.timeout} onChange={e => setSettings({ ...settings, timeout: parseInt(e.target.value) || 0 })} />
+                            <input
+                                type="number"
+                                min={1}
+                                max={300000}
+                                value={settings.timeout}
+                                onChange={e => {
+                                    const val = Math.max(1, Math.min(300000, parseInt(e.target.value) || 1));
+                                    setSettings({ ...settings, timeout: val });
+                                }}
+                                title="バックエンド実装の制限（Timeoutオブジェクト：最大300,000ms）に準拠。0は無効。"
+                            />
                             <span className="unit">ミリ秒</span>
                         </div>
                     </div>
                     <div className="field-group">
                         <label>TTL:</label>
                         <div className="field-row">
-                            <input type="number" value={settings.ttl} onChange={e => setSettings({ ...settings, ttl: parseInt(e.target.value) || 0 })} />
+                            <input
+                                type="number"
+                                min={1}
+                                max={255}
+                                value={settings.ttl}
+                                onChange={e => {
+                                    const val = Math.max(1, Math.min(255, parseInt(e.target.value) || 1));
+                                    setSettings({ ...settings, ttl: val });
+                                }}
+                                title="IPヘッダにおけるTTLフィールドは8ビットのため、1〜255の範囲に限定"
+                            />
                         </div>
                     </div>
                 </div>
