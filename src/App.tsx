@@ -23,8 +23,8 @@ function App() {
   const [activeTab, setActiveTab] = useState("results");
   const [targets, setTargets] = useState<Target[]>([
     { host: "127.0.0.1", remarks: "ローカルホスト" },
-    { host: "8.8.8.8", remarks: "Google DNS(v6)" },
-    { host: "2001:4860:4860::8888", remarks: "Google DNS(v4)" }
+    { host: "8.8.8.8", remarks: "Google DNS(v4)" },
+    { host: "2001:4860:4860::8888", remarks: "Google DNS(v6)" }
   ]);
   const [newTarget, setNewTarget] = useState("");
   const [newRemarks, setNewRemarks] = useState("");

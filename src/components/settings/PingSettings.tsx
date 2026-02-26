@@ -113,7 +113,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                 <div className="radio-group" style={{ display: 'flex', gap: '20px' }}>
                     <label className="checkbox-label">
                         <input type="radio" checked={settings.repeatMode === 'parallel'} onChange={() => setSettings({ ...settings, repeatMode: 'parallel' })} />
-                        並列実行 (一斉)
+                        並列実行 (AB-AB)
                     </label>
                     <label className="checkbox-label">
                         <input type="radio" checked={settings.repeatMode === 'sequential'} onChange={() => setSettings({ ...settings, repeatMode: 'sequential' })} />
