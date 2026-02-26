@@ -23,7 +23,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     selectDir,
     playSound
 }) => {
-    const [settingsTab, setSettingsTab] = useState("general");
+    const [settingsTab, setSettingsTab] = useState("ping");
 
     const renderTabContent = () => {
         switch (settingsTab) {
@@ -58,8 +58,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <div className="settings-header-tabs">
-                <div className={`settings-tab ${settingsTab === 'general' ? 'active' : ''}`} onClick={() => setSettingsTab('general')}>基本設定</div>
                 <div className={`settings-tab ${settingsTab === 'ping' ? 'active' : ''}`} onClick={() => setSettingsTab('ping')}>Ping実行設定</div>
+                <div className={`settings-tab ${settingsTab === 'general' ? 'active' : ''}`} onClick={() => setSettingsTab('general')}>基本設定</div>
                 <div className={`settings-tab ${settingsTab === 'logs' ? 'active' : ''}`} onClick={() => setSettingsTab('logs')}>ログ保存</div>
                 <div className={`settings-tab ${settingsTab === 'ng' ? 'active' : ''}`} onClick={() => setSettingsTab('ng')}>NG時処理</div>
                 <div className={`settings-tab ${settingsTab === 'ok' ? 'active' : ''}`} onClick={() => setSettingsTab('ok')}>OK時処理</div>

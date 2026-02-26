@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Settings } from '../../types';
 
 interface PingSettingsProps {
@@ -7,6 +7,14 @@ interface PingSettingsProps {
 }
 
 const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) => {
+    const firstInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (firstInputRef.current) {
+            firstInputRef.current.focus();
+        }
+    }, []);
+
     return (
         <div className="settings-container" style={{ padding: 0, background: 'transparent' }}>
             <div className="settings-section" style={{ maxWidth: 'none' }}>
@@ -16,6 +24,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                         <label>繰り返し回数:</label>
                         <div className="field-row">
                             <input
+                                ref={firstInputRef}
                                 type="number"
                                 min={1}
                                 max={99999}
