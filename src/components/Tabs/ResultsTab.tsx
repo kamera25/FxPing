@@ -1,5 +1,7 @@
-import React, { RefObject } from 'react';
+import React, { RefObject, useState } from 'react';
 import { PingResult } from '../../types';
+
+type TableSize = 'xsmall' | 'small' | 'medium' | 'large';
 
 interface ResultsTabProps {
     isPinging: boolean;
@@ -34,6 +36,8 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
     scrollRef,
     handleScroll
 }) => {
+    const [tableSize, setTableSize] = useState<TableSize>('medium');
+
     return (
         <>
             <div className="toolbar">
@@ -44,9 +48,30 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
                     {isPinging ? "■ 停止" : "▶ 開始"}
                 </button>
                 <button onClick={() => { setResults([]); setTargetStats({}); }}>履歴クリア</button>
+
+                <div className="size-selector">
+                    <button
+                        className={`size-btn ${tableSize === 'xsmall' ? 'active' : ''}`}
+                        onClick={() => setTableSize('xsmall')}
+                    >
+                        小
+                    </button>
+                    <button
+                        className={`size-btn ${tableSize === 'medium' ? 'active' : ''}`}
+                        onClick={() => setTableSize('medium')}
+                    >
+                        中
+                    </button>
+                    <button
+                        className={`size-btn ${tableSize === 'large' ? 'active' : ''}`}
+                        onClick={() => setTableSize('large')}
+                    >
+                        大
+                    </button>
+                </div>
             </div>
 
-            <div className="table-container" ref={scrollRef} onScroll={handleScroll}>
+            <div className={`table-container table-${tableSize}`} ref={scrollRef} onScroll={handleScroll}>
                 <table>
                     <thead>
                         <tr>

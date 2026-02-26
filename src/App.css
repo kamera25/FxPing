@@ -109,6 +109,73 @@ tr:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
+/* Table Sizes */
+.table-xsmall table {
+  font-size: 9px;
+}
+
+.table-xsmall th {
+  padding: 1px 4px;
+}
+
+.table-xsmall td {
+  padding: 0px 4px;
+}
+
+.table-medium table {
+  font-size: 11px;
+}
+
+.table-medium th {
+  padding: 4px 8px;
+}
+
+.table-medium td {
+  padding: 2px 8px;
+}
+
+.table-large table {
+  font-size: 13px;
+}
+
+.table-large th {
+  padding: 8px 12px;
+}
+
+.table-large td {
+  padding: 6px 12px;
+}
+
+.size-selector {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 2px;
+  margin-left: auto;
+}
+
+.size-btn {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border: none;
+  padding: 4px 12px;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 40px;
+}
+
+.size-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.size-btn.active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
 .status-ok {
   color: var(--success);
   font-weight: bold;
