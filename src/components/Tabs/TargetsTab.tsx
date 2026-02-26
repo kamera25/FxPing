@@ -92,7 +92,7 @@ const TargetsTab: React.FC<TargetsTabProps> = ({
                 ) : (
                     <div className="exping-input-area">
                         <div style={{ marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>
-                            ExPing形式で入力 (既存の定義を上書き)
+                            ExPing形式で入力 (既存の定義を上書き・defファイルからドロップで上書き可)
                         </div>
                         <textarea
                             style={{
