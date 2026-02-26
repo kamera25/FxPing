@@ -23,7 +23,8 @@ function App() {
   const [activeTab, setActiveTab] = useState("results");
   const [targets, setTargets] = useState<Target[]>([
     { host: "127.0.0.1", remarks: "ローカルホスト" },
-    { host: "8.8.8.8", remarks: "Google DNS" }
+    { host: "8.8.8.8", remarks: "Google DNS(v6)" },
+    { host: "2001:4860:4860::8888", remarks: "Google DNS(v4)" }
   ]);
   const [newTarget, setNewTarget] = useState("");
   const [newRemarks, setNewRemarks] = useState("");
@@ -31,12 +32,13 @@ function App() {
   const [targetStats, setTargetStats] = useState<Record<string, TargetStats>>({});
   const [traceResults, setTraceResults] = useState<TraceResult[]>([]);
   const [isPinging, setIsPinging] = useState(false);
+  const [isRunActive, setIsRunActive] = useState(false);
   const [_targetNgStats, setTargetNgStats] = useState<Record<string, { consecutiveCount: number, alerted: boolean }>>({});
   const [activeAlert, setActiveAlert] = useState<{ target: string, timestamp: string, reason: string } | null>(null);
   const [isTracing, setIsTracing] = useState(false);
   const [traceProtocol, setTraceProtocol] = useState<'ICMP' | 'UDP'>('ICMP');
   const [settings, setSettings] = useState<Settings>({
-    repeatCount: 1000,
+    repeatCount: 1,
     interval: 500,
     payloadSize: 64,
     timeout: 500,
@@ -319,12 +321,14 @@ function App() {
           if (settings.repeatMode === 'sequential') {
             if (currentTargetIndex >= targets.length) {
               setIsPinging(false);
+              if (!settings.periodicExecution) setIsRunActive(false);
               isExecuting = false;
               return;
             }
           } else {
             if (currentIteration >= settings.repeatCount) {
               setIsPinging(false);
+              if (!settings.periodicExecution) setIsRunActive(false);
               isExecuting = false;
               return;
             }
@@ -474,13 +478,13 @@ function App() {
 
   useEffect(() => {
     let periodicTimer: number | undefined;
-    if (settings.periodicExecution && !isPinging) {
+    if (settings.periodicExecution && !isPinging && isRunActive) {
       periodicTimer = window.setTimeout(() => {
         setIsPinging(true);
       }, settings.periodicInterval * 1000);
     }
     return () => clearTimeout(periodicTimer);
-  }, [settings.periodicExecution, settings.periodicInterval, isPinging]);
+  }, [settings.periodicExecution, settings.periodicInterval, isPinging, isRunActive]);
 
   const handleSave = async () => {
     if (activeTab === 'targets') {
@@ -630,8 +634,11 @@ function App() {
 
         {!showSettings && activeTab === 'results' && (
           <ResultsTab
-            isPinging={isPinging}
-            setIsPinging={setIsPinging}
+            isPinging={isRunActive}
+            setIsPinging={(active) => {
+              setIsRunActive(active);
+              setIsPinging(active);
+            }}
             results={results}
             setResults={setResults}
             setTargetStats={setTargetStats}
