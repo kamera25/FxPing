@@ -38,7 +38,7 @@ function App() {
   const [isTracing, setIsTracing] = useState(false);
   const [traceProtocol, setTraceProtocol] = useState<'ICMP' | 'UDP'>('ICMP');
   const [settings, setSettings] = useState<Settings>({
-    repeatCount: 1,
+    repeatCount: 2,
     interval: 500,
     payloadSize: 64,
     timeout: 500,
@@ -59,10 +59,10 @@ function App() {
       showPopup: true,
       playSound: false,
       soundFile: "",
-      launchProgram: true,
-      programPath: "C:\\TOOL\\ExSMTP\\ExSMTP.exe",
-      programOptions: "-R Server-Report.ini -B \"サーバ障害\"",
-      programWorkingDir: "C:\\TOOL\\ExSMTP\\",
+      launchProgram: false,
+      programPath: "",
+      programOptions: "",
+      programWorkingDir: "",
       executeOnDelay: false,
       delayMs: 500,
       onceOnly: false,
