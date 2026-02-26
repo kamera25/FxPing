@@ -42,6 +42,7 @@ function App() {
     timeout: 500,
     ttl: 255,
     repeatOrder: 'robin',
+    repeatMode: 'parallel',
     periodicExecution: false,
     periodicInterval: 60,
     hideOnMinimize: false,
@@ -305,26 +306,61 @@ function App() {
 
   useEffect(() => {
     let interval: number | undefined;
-    let count = 0;
-
     if (isPinging) {
+      let currentIteration = 0;
+      let currentTargetIndex = 0;
+      let isExecuting = false;
+
       const runPing = async () => {
-        if (settings.repeatCount > 0 && count >= settings.repeatCount) {
+        if (isExecuting) return;
+        isExecuting = true;
+
+        if (settings.repeatCount > 0 && currentIteration >= settings.repeatCount) {
           setIsPinging(false);
+          isExecuting = false;
           return;
         }
 
-        const promises = targets.map(target =>
-          invoke<PingResult>("ping_target", {
-            target: target.host,
-            remarks: target.remarks,
-            timeoutMs: settings.timeout,
-            payloadSize: settings.payloadSize,
-            ttl: settings.ttl
-          })
-        );
-
         try {
+          let targetsToPing: Target[] = [];
+
+          if (settings.repeatMode === 'parallel') {
+            // Parallel: All targets at once
+            targetsToPing = targets;
+            currentIteration++;
+          } else if (settings.repeatMode === 'sequential') {
+            // Sequential (A-A-B-B): One target for all repeats, then next
+            targetsToPing = [targets[currentTargetIndex]];
+            currentIteration++;
+            if (currentIteration >= settings.repeatCount) {
+              currentIteration = 0;
+              currentTargetIndex++;
+              if (currentTargetIndex >= targets.length) {
+                setIsPinging(false);
+                isExecuting = false;
+                return;
+              }
+            }
+          } else if (settings.repeatMode === 'robin') {
+            // Robin (A-B-A-B): One target per interval
+            targetsToPing = [targets[currentTargetIndex]];
+            currentTargetIndex++;
+            if (currentTargetIndex >= targets.length) {
+              currentTargetIndex = 0;
+              currentIteration++;
+            }
+          }
+
+          const promises = targetsToPing.map(target =>
+            invoke<PingResult>("ping_target", {
+              target: target.host,
+              remarks: target.remarks,
+              timeoutMs: settings.timeout,
+              payloadSize: settings.payloadSize,
+              ttl: settings.ttl
+            })
+          );
+
           const newResults = await Promise.all(promises);
           setResults(prev => {
             const combined = [...prev, ...newResults];
@@ -411,10 +447,10 @@ function App() {
             }
             return nextStats;
           });
-
-          count++;
         } catch (e) {
           console.error("Ping error", e);
+        } finally {
+          isExecuting = false;
         }
       };
 
@@ -430,6 +466,16 @@ function App() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [results]);
+
+  useEffect(() => {
+    let periodicTimer: number | undefined;
+    if (settings.periodicExecution && !isPinging) {
+      periodicTimer = setInterval(() => {
+        setIsPinging(true);
+      }, settings.periodicInterval * 60 * 1000);
+    }
+    return () => clearInterval(periodicTimer);
+  }, [settings.periodicExecution, settings.periodicInterval, isPinging]);
 
   const handleSave = async () => {
     if (activeTab === 'targets') {

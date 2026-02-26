@@ -1,4 +1,4 @@
-use crate::tcpip::host::Host;
+use crate::tcpip::hop::Hop;
 use crate::tcpip::payload_size::PayloadSize;
 use crate::tcpip::timeout::Timeout;
 use chrono::Local;
@@ -21,13 +21,20 @@ pub struct Pinger {
     ip: IpAddr,
     timeout: Timeout,
     payload_size: PayloadSize,
+    ttl: Hop,
 }
 
 impl Pinger {
-    pub async fn new(target: String, timeout_ms: u64, payload_size: usize) -> Result<Self, String> {
+    pub async fn new(
+        target: String,
+        timeout_ms: u64,
+        payload_size: usize,
+        ttl: u32,
+    ) -> Result<Self, String> {
         let payload_size = PayloadSize::new(payload_size)?;
         let timeout = Timeout::new(timeout_ms)?;
-        let host = Host::new(&target)?;
+        let ttl = Hop::new(ttl)?;
+        let host = crate::tcpip::host::Host::new(&target)?;
         let target_str = host.to_string();
 
         let ip: IpAddr = match target_str.parse() {
@@ -51,13 +58,20 @@ impl Pinger {
             ip,
             timeout,
             payload_size,
+            ttl,
         })
     }
 
     pub async fn ping(&self, remarks: String) -> Result<PingResult, String> {
         let config = match self.ip {
-            IpAddr::V4(_) => Config::builder().kind(ICMP::V4).build(),
-            IpAddr::V6(_) => Config::builder().kind(ICMP::V6).build(),
+            IpAddr::V4(_) => Config::builder()
+                .kind(ICMP::V4)
+                .ttl(self.ttl.value())
+                .build(),
+            IpAddr::V6(_) => Config::builder()
+                .kind(ICMP::V6)
+                .ttl(self.ttl.value())
+                .build(),
         };
         let client = Client::new(&config).map_err(|e| e.to_string())?;
 
@@ -101,27 +115,29 @@ mod tests {
 
     #[tokio::test]
     async fn test_pinger_new_valid_ip() {
-        let pinger = Pinger::new("127.0.0.1".to_string(), 1000, 32).await;
+        let pinger = Pinger::new("127.0.0.1".to_string(), 1000, 32, 64).await;
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
         assert_eq!(pinger.timeout.as_millis(), 1000);
         assert_eq!(pinger.payload_size.value(), 32);
+        assert_eq!(pinger.ttl.value(), 64);
     }
 
     #[tokio::test]
     async fn test_pinger_new_valid_ipv6() {
-        let pinger = Pinger::new("::1".to_string(), 1000, 32).await;
+        let pinger = Pinger::new("::1".to_string(), 1000, 32, 64).await;
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "::1".parse::<IpAddr>().unwrap());
         assert_eq!(pinger.timeout.as_millis(), 1000);
         assert_eq!(pinger.payload_size.value(), 32);
+        assert_eq!(pinger.ttl.value(), 64);
     }
 
     #[tokio::test]
     async fn test_pinger_new_invalid_target() {
-        let pinger = Pinger::new("invalid...host".to_string(), 1000, 32).await;
+        let pinger = Pinger::new("invalid...host".to_string(), 1000, 32, 64).await;
         assert!(pinger.is_err());
     }
 

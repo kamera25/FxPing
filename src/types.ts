@@ -45,6 +45,7 @@ export interface Settings {
     timeout: number;
     ttl: number;
     repeatOrder: 'sequential' | 'robin';
+    repeatMode: 'parallel' | 'sequential' | 'robin';
     periodicExecution: boolean;
     periodicInterval: number;
     hideOnMinimize: boolean;

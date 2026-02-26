@@ -17,9 +17,9 @@ async fn ping_target(
     remarks: String,
     timeout_ms: u64,
     payload_size: usize,
-    _ttl: u32,
+    ttl: u32,
 ) -> Result<PingResult, String> {
-    let pinger = Pinger::new(target, timeout_ms, payload_size).await?;
+    let pinger = Pinger::new(target, timeout_ms, payload_size, ttl).await?;
     pinger.ping(remarks).await
 }
 

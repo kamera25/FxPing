@@ -100,15 +100,19 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
             </div>
 
             <div className="settings-section" style={{ maxWidth: 'none' }}>
-                <h3>繰り返し順序</h3>
-                <div className="radio-group">
+                <h3>繰り返しモード</h3>
+                <div className="radio-group" style={{ display: 'flex', gap: '20px' }}>
                     <label className="checkbox-label">
-                        <input type="radio" checked={settings.repeatOrder === 'sequential'} onChange={() => setSettings({ ...settings, repeatOrder: 'sequential' })} />
-                        ソートしない (A-A-B-B)
+                        <input type="radio" checked={settings.repeatMode === 'parallel'} onChange={() => setSettings({ ...settings, repeatMode: 'parallel' })} />
+                        並列実行 (一斉)
                     </label>
                     <label className="checkbox-label">
-                        <input type="radio" checked={settings.repeatOrder === 'robin'} onChange={() => setSettings({ ...settings, repeatOrder: 'robin' })} />
-                        端末でソート (A-B-A-B)
+                        <input type="radio" checked={settings.repeatMode === 'sequential'} onChange={() => setSettings({ ...settings, repeatMode: 'sequential' })} />
+                        順次実行 (A-A-B-B)
+                    </label>
+                    <label className="checkbox-label">
+                        <input type="radio" checked={settings.repeatMode === 'robin'} onChange={() => setSettings({ ...settings, repeatMode: 'robin' })} />
+                        ラウンドロビン (A-B-A-B)
                     </label>
                 </div>
             </div>

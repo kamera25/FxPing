@@ -5,10 +5,10 @@ pub struct Hop(u32);
 
 impl Hop {
     pub fn new(val: u32) -> Result<Self, String> {
-        if (2..=255).contains(&val) {
+        if (1..=255).contains(&val) {
             Ok(Hop(val))
         } else {
-            Err(format!("Hop value must be between 2 and 255. Got: {}", val))
+            Err(format!("Hop value must be between 1 and 255. Got: {}", val))
         }
     }
 
