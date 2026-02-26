@@ -79,6 +79,19 @@ async fn save_text_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn append_text_file(path: String, content: String) -> Result<(), String> {
+    use std::fs::OpenOptions;
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|e| e.to_string())?;
+    file.write_all(content.as_bytes())
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
     std::fs::read(&path).map_err(|e| e.to_string())
 }
@@ -121,6 +134,7 @@ pub fn run() {
             validate_host,
             save_targets,
             save_text_file,
+            append_text_file,
             get_platform,
             read_file_bytes,
             is_admin

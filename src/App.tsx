@@ -90,6 +90,8 @@ function App() {
   const [isInputError, setIsInputError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isAtBottom = useRef(true);
+  const lastSavedIndexRef = useRef(0);
+  const lastSavedPathRef = useRef<string | null>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -634,6 +636,66 @@ function App() {
     }
     setTraceProtocol(proto);
   };
+
+  const getLogFilePath = () => {
+    if (!settings.logs.savePath) return null;
+    const y = String(currentTime.getFullYear()).slice(-2);
+    const m = String(currentTime.getMonth() + 1).padStart(2, '0');
+    const d = String(currentTime.getDate()).padStart(2, '0');
+    const dateStr = `${y}${m}${d}`;
+
+    let fileName = "";
+    if (settings.logs.fileNameSetting === 'fixed') {
+      fileName = settings.logs.fixedName || "FxPing.log";
+    } else {
+      const ext = settings.logs.extension.startsWith('.') ? settings.logs.extension.slice(1) : settings.logs.extension;
+      fileName = `${settings.logs.prefix}${dateStr}.${ext || 'LOG'}`;
+    }
+
+    const sep = platform.toLowerCase().includes('win') ? '\\' : '/';
+    let path = settings.logs.savePath;
+    if (!path.endsWith(sep)) {
+      path += sep;
+    }
+    return path + fileName;
+  };
+
+  useEffect(() => {
+    if (settings.logs.autoSave && isRunActive && results.length > 0) {
+      const path = getLogFilePath();
+      if (!path) return;
+
+      const resultsToSave = results.slice(lastSavedIndexRef.current);
+      if (resultsToSave.length === 0 && path === lastSavedPathRef.current) return;
+
+      const formatResults = (rows: PingResult[]) => rows.map(r =>
+        `${r.status.startsWith("OK") ? "OK" : "NG"},${r.timestamp},${r.target},${r.ip},${r.time_ms !== null ? r.time_ms.toFixed(2) : "-"},${r.status},${r.remarks}`
+      ).join('\n');
+
+      if (path !== lastSavedPathRef.current) {
+        // New file or session: Overwrite
+        const header = "ステータス,日時,対象,IPアドレス,応答時間(ms),詳細,備考\n";
+        const content = header + formatResults(results);
+        invoke("save_text_file", { path, content }).then(() => {
+          lastSavedIndexRef.current = results.length;
+          lastSavedPathRef.current = path;
+        }).catch(e => {
+          console.error("Auto-save log error (overwrite):", e);
+        });
+      } else if (resultsToSave.length > 0) {
+        // Same file: Append
+        const content = formatResults(resultsToSave) + "\n";
+        invoke("append_text_file", { path, content }).then(() => {
+          lastSavedIndexRef.current = results.length;
+        }).catch(e => {
+          console.error("Auto-save log error (append):", e);
+        });
+      }
+    } else if (!isRunActive) {
+      lastSavedIndexRef.current = 0;
+      lastSavedPathRef.current = null;
+    }
+  }, [results, isRunActive, settings.logs.autoSave]);
 
   return (
     <div className="app-container">

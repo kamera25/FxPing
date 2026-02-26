@@ -13,8 +13,7 @@ const StatsBar: React.FC<StatsBarProps> = ({
     targetCount,
     resultCount,
     currentTime,
-    nextPingTimeMs,
-    repeatMode
+    nextPingTimeMs
 }) => {
     // Show countdown if available. 
     // If it's parallel mode and isRepeating, we might want to hide intra-run info, 
