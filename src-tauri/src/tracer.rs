@@ -51,6 +51,7 @@ impl Tracer {
         payload_size: usize,
         max_hops: Hop,
         protocol: String,
+        resolve_hostnames: bool,
     ) -> Result<Self, String> {
         let payload_size = PayloadSize::new(payload_size)?;
         let timeout = Timeout::new(timeout_ms)?;
@@ -74,9 +75,15 @@ impl Tracer {
         };
 
         let inner: Box<dyn TracerImpl> = if protocol == "ICMP" {
-            Box::new(ICMPTracer::new(ip, timeout, payload_size, max_hops))
+            Box::new(ICMPTracer::new(
+                ip,
+                timeout,
+                payload_size,
+                max_hops,
+                resolve_hostnames,
+            ))
         } else {
-            Box::new(UDPTracer::new(ip, timeout, max_hops))
+            Box::new(UDPTracer::new(ip, timeout, max_hops, resolve_hostnames))
         };
 
         Ok(Self {
@@ -120,7 +127,15 @@ mod tests {
     #[tokio::test]
     async fn test_tracer_new_valid() {
         let hops = Hop::new(30).unwrap();
-        let tracer = Tracer::new("127.0.0.1".to_string(), 1000, 32, hops, "ICMP".to_string()).await;
+        let tracer = Tracer::new(
+            "127.0.0.1".to_string(),
+            1000,
+            32,
+            hops,
+            "ICMP".to_string(),
+            true,
+        )
+        .await;
         assert!(tracer.is_ok());
         let tracer = tracer.unwrap();
         assert_eq!(tracer.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
@@ -135,6 +150,7 @@ mod tests {
             32,
             hops,
             "ICMP".to_string(),
+            true,
         )
         .await;
         assert!(tracer.is_err());

@@ -8,14 +8,16 @@ pub struct UDPTracer {
     ip: IpAddr,
     timeout: Timeout,
     max_hops: Hop,
+    resolve_hostnames: bool,
 }
 
 impl UDPTracer {
-    pub fn new(ip: IpAddr, timeout: Timeout, max_hops: Hop) -> Self {
+    pub fn new(ip: IpAddr, timeout: Timeout, max_hops: Hop, resolve_hostnames: bool) -> Self {
         Self {
             ip,
             timeout,
             max_hops,
+            resolve_hostnames,
         }
     }
 }
@@ -48,7 +50,7 @@ impl TracerImpl for UDPTracer {
                 match output {
                     Ok(output) => {
                         let stdout = String::from_utf8_lossy(&output.stdout);
-                        let hops = parse_traceroute_output(&stdout, &target_ip);
+                        let hops = parse_traceroute_output(&stdout, &target_ip, self.resolve_hostnames);
                         Ok(hops)
                     }
                     Err(e) => Err(format!(
@@ -140,7 +142,11 @@ impl TracerImpl for UDPTracer {
                             }
                         }
 
-                        let fqdn = hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok());
+                        let fqdn = if self.resolve_hostnames {
+                            hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
+                        } else {
+                            None
+                        };
 
                         hops.push(TraceHop {
                             ttl: ttl as u32,
@@ -162,7 +168,7 @@ impl TracerImpl for UDPTracer {
 }
 
 #[cfg(unix)]
-fn parse_traceroute_output(stdout: &str, target_ip: &str) -> Vec<TraceHop> {
+fn parse_traceroute_output(stdout: &str, target_ip: &str, resolve_hostnames: bool) -> Vec<TraceHop> {
     let mut hops = Vec::new();
     for line in stdout.lines() {
         let parts: Vec<&str> = line.split_whitespace().collect();
@@ -189,7 +195,11 @@ fn parse_traceroute_output(stdout: &str, target_ip: &str) -> Vec<TraceHop> {
                     }
                 }
 
-                let fqdn = hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok());
+                let fqdn = if resolve_hostnames {
+                    hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
+                } else {
+                    None
+                };
 
                 hops.push(TraceHop {
                     ttl,
@@ -217,7 +227,7 @@ mod tests {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let timeout = Timeout::new(1000).unwrap();
         let max_hops = Hop::new(30).unwrap();
-        let tracer = UDPTracer::new(ip, timeout, max_hops);
+        let tracer = UDPTracer::new(ip, timeout, max_hops, true);
 
         assert_eq!(tracer.ip, ip);
         assert_eq!(tracer.timeout, timeout);
@@ -229,7 +239,7 @@ mod tests {
         let ip = "::1".parse::<IpAddr>().unwrap();
         let timeout = Timeout::new(1000).unwrap();
         let max_hops = Hop::new(30).unwrap();
-        let tracer = UDPTracer::new(ip, timeout, max_hops);
+        let tracer = UDPTracer::new(ip, timeout, max_hops, true);
 
         assert_eq!(tracer.ip, ip);
         assert_eq!(tracer.timeout, timeout);
@@ -245,7 +255,7 @@ mod tests {
 2  *
 3  8.8.8.8  10.2 ms
 "#;
-        let hops = parse_traceroute_output(stdout, target_ip);
+        let hops = parse_traceroute_output(stdout, target_ip, true);
 
         assert_eq!(hops.len(), 3);
 
@@ -271,7 +281,7 @@ mod tests {
 2  *
 3  2001:4860:4860::8888  10.2 ms
 "#;
-        let hops = parse_traceroute_output(stdout, target_ip);
+        let hops = parse_traceroute_output(stdout, target_ip, true);
 
         assert_eq!(hops.len(), 3);
 

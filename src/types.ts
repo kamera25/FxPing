@@ -55,6 +55,8 @@ export interface Settings {
     maxResults: number;
     flashTrayIcon: boolean;
     prohibitFragmentation: boolean;
+    maxHops: number;
+    resolveHostnames: boolean;
     ng: {
         changeTrayIcon: boolean;
         showPopup: boolean;

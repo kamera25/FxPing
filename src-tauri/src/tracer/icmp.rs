@@ -10,15 +10,23 @@ pub struct ICMPTracer {
     timeout: Timeout,
     payload_size: PayloadSize,
     max_hops: Hop,
+    resolve_hostnames: bool,
 }
 
 impl ICMPTracer {
-    pub fn new(ip: IpAddr, timeout: Timeout, payload_size: PayloadSize, max_hops: Hop) -> Self {
+    pub fn new(
+        ip: IpAddr,
+        timeout: Timeout,
+        payload_size: PayloadSize,
+        max_hops: Hop,
+        resolve_hostnames: bool,
+    ) -> Self {
         Self {
             ip,
             timeout,
             payload_size,
             max_hops,
+            resolve_hostnames,
         }
     }
 }
@@ -45,7 +53,11 @@ impl TracerImpl for ICMPTracer {
                             surge_ping::IcmpPacket::V4(p) => p.get_real_dest().into(),
                             surge_ping::IcmpPacket::V6(p) => p.get_real_dest().into(),
                         };
-                        let fqdn = dns_lookup::lookup_addr(&hop_ip).ok();
+                        let fqdn = if self.resolve_hostnames {
+                            dns_lookup::lookup_addr(&hop_ip).ok()
+                        } else {
+                            None
+                        };
 
                         hops.push(TraceHop {
                             ttl,
@@ -84,7 +96,7 @@ mod tests {
         let timeout = Timeout::new(1000).unwrap();
         let payload_size = PayloadSize::new(32).unwrap();
         let max_hops = Hop::new(30).unwrap();
-        let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops);
+        let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops, true);
 
         assert_eq!(tracer.ip, ip);
         assert_eq!(tracer.timeout, timeout);
@@ -98,7 +110,7 @@ mod tests {
         let timeout = Timeout::new(1000).unwrap();
         let payload_size = PayloadSize::new(32).unwrap();
         let max_hops = Hop::new(30).unwrap();
-        let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops);
+        let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops, true);
 
         assert_eq!(tracer.ip, ip);
         assert_eq!(tracer.timeout, timeout);

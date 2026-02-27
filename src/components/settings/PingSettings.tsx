@@ -136,6 +136,40 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                     <span className="unit">秒待機</span>
                 </div>
             </div>
+
+            <div className="settings-section" style={{ maxWidth: 'none' }}>
+                <h3>TraceRoute オプション</h3>
+                <div className="settings-grid">
+                    <div className="field-group">
+                        <label>最大HOPS:</label>
+                        <div className="field-row">
+                            <input
+                                type="number"
+                                min={1}
+                                max={255}
+                                value={settings.maxHops || 20}
+                                onChange={e => {
+                                    const val = Math.max(1, Math.min(255, parseInt(e.target.value) || 1));
+                                    setSettings({ ...settings, maxHops: val });
+                                }}
+                            />
+                        </div>
+                    </div>
+                    <div className="field-group">
+                        <div className="field-row" style={{ marginTop: '22px' }}>
+                            <label className="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.resolveHostnames}
+                                    onChange={e => setSettings({ ...settings, resolveHostnames: e.target.checked })}
+                                />
+                                ホスト名の解決を行う
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     );
 };

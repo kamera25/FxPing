@@ -36,10 +36,19 @@ async fn traceroute_target(
     timeout_ms: u64,
     payload_size: usize,
     max_hops: u32,
+    resolve_hostnames: bool,
     protocol: String,
 ) -> Result<tracer::TraceResult, String> {
     let hops = Hop::new(max_hops)?;
-    let tracer = Tracer::new(target, timeout_ms, payload_size, hops, protocol).await?;
+    let tracer = Tracer::new(
+        target,
+        timeout_ms,
+        payload_size,
+        hops,
+        protocol,
+        resolve_hostnames,
+    )
+    .await?;
     tracer.trace().await
 }
 

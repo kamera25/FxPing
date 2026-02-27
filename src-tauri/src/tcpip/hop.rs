@@ -36,7 +36,6 @@ mod tests {
 
     #[test]
     fn test_hop_new_invalid() {
-        assert!(Hop::new(1).is_err());
         assert!(Hop::new(0).is_err());
         assert!(Hop::new(256).is_err());
     }

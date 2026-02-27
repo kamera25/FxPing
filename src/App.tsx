@@ -54,6 +54,8 @@ function App() {
     maxResults: 1000,
     flashTrayIcon: true,
     prohibitFragmentation: false,
+    maxHops: 20,
+    resolveHostnames: true,
     ng: {
       changeTrayIcon: true,
       showPopup: true,
@@ -310,7 +312,8 @@ function App() {
           target: target.host,
           timeoutMs: settings.timeout,
           payloadSize: settings.payloadSize,
-          maxHops: 30,
+          maxHops: settings.maxHops,
+          resolveHostnames: settings.resolveHostnames,
           protocol: traceProtocol
         });
         newTraceResults.push(res);
