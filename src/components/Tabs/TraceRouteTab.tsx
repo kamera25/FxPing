@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TraceResult } from '../../types';
 
 interface TraceRouteTabProps {
@@ -18,6 +18,47 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
     traceResults,
     setTraceResults
 }) => {
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [showLeftArrow, setShowLeftArrow] = useState(false);
+    const [showRightArrow, setShowRightArrow] = useState(false);
+
+    const checkScroll = useCallback(() => {
+        const container = scrollContainerRef.current;
+        if (container) {
+            const { scrollLeft, scrollWidth, clientWidth } = container;
+            // Use a small buffer for precision issues
+            setShowLeftArrow(scrollLeft > 5);
+            setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 5);
+        }
+    }, []);
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (container) {
+            checkScroll();
+            container.addEventListener('scroll', checkScroll);
+            window.addEventListener('resize', checkScroll);
+
+            // Observe changes in traceResults (hops being added)
+            const observer = new ResizeObserver(checkScroll);
+            observer.observe(container);
+
+            return () => {
+                container.removeEventListener('scroll', checkScroll);
+                window.removeEventListener('resize', checkScroll);
+                observer.disconnect();
+            };
+        }
+    }, [checkScroll, traceResults]);
+
+    const scrollHops = (direction: 'left' | 'right') => {
+        const container = scrollContainerRef.current;
+        if (container) {
+            const scrollAmount = direction === 'left' ? -500 : 500;
+            container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+    };
+
     return (
         <>
             <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -51,58 +92,84 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                 <button onClick={() => setTraceResults([])}>履歴クリア</button>
             </div>
 
-            <div className="table-container" style={{ overflowX: 'auto', maxWidth: '100%' }}>
-                <table style={{ minWidth: 'max-content', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr>
-                            <th style={{ width: '150px', position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 2 }}>対象ホスト</th>
-                            <th style={{ width: '80px', position: 'sticky', left: '150px', background: 'var(--bg-secondary)', zIndex: 2 }}>Ping</th>
-                            {(() => {
-                                const maxHopsFound = Math.max(0, ...traceResults.map(r => r.hops.length));
-                                return Array.from({ length: Math.max(1, maxHopsFound) }).map((_, i) => (
-                                    <th key={i} style={{ width: '150px' }}>Hop {i + 1}</th>
-                                ));
-                            })()}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {traceResults.map((res, i) => {
-                            const maxHopsFound = Math.max(0, ...traceResults.map(r => r.hops.length));
-                            return (
-                                <tr key={i}>
-                                    <td style={{ position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 1 }}>{res.target}</td>
-                                    <td
-                                        className={res.ping_ok === null ? "status-pending" : (res.ping_ok ? "status-ok" : "status-ng")}
-                                        style={{ position: 'sticky', left: '150px', background: 'var(--bg-secondary)', zIndex: 1 }}
-                                    >
-                                        {res.ping_ok === null ? "実行中" : (res.ping_ok ? "OK" : "NG")}
-                                    </td>
-                                    {Array.from({ length: Math.max(1, maxHopsFound) }).map((_, j) => {
-                                        const hop = res.hops[j];
-                                        return (
-                                            <td key={j} style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
-                                                {hop ? (
-                                                    <>
-                                                        <div style={{ fontWeight: 'bold', color: hop.ip === "*" ? "#ff4d4d" : "inherit" }}>{hop.ip}</div>
-                                                        {hop.fqdn && <div style={{ opacity: 0.8, color: 'var(--primary)', fontStyle: 'italic' }}>{hop.fqdn}</div>}
-                                                        <div style={{ opacity: 0.6 }}>{hop.time_ms !== null ? `${hop.time_ms.toFixed(1)}ms` : "-"}</div>
-                                                    </>
-                                                ) : "-"}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            );
-                        })}
-                        {traceResults.length === 0 && (
+            <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex' }}>
+                {showLeftArrow && (
+                    <div
+                        className="scroll-arrow left"
+                        onClick={() => scrollHops('left')}
+                        title="左にスクロール"
+                    >
+                        <span>‹</span>
+                    </div>
+                )}
+
+                {showRightArrow && (
+                    <div
+                        className="scroll-arrow right"
+                        onClick={() => scrollHops('right')}
+                        title="右にスクロール"
+                    >
+                        <span>›</span>
+                    </div>
+                )}
+
+                <div
+                    ref={scrollContainerRef}
+                    className="table-container"
+                    style={{ overflowX: 'auto', maxWidth: '100%' }}
+                >
+                    <table style={{ minWidth: 'max-content', borderCollapse: 'collapse' }}>
+                        <thead>
                             <tr>
-                                <td colSpan={3} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
-                                    TraceRouteを実行するには「開始」ボタンを押してください
-                                </td>
+                                <th style={{ width: '150px', position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 2 }}>対象ホスト</th>
+                                <th style={{ width: '80px' }}>Ping</th>
+                                {(() => {
+                                    const maxHopsFound = Math.max(0, ...traceResults.map(r => r.hops.length));
+                                    return Array.from({ length: Math.max(1, maxHopsFound) }).map((_, i) => (
+                                        <th key={i} style={{ width: '150px' }}>Hop {i + 1}</th>
+                                    ));
+                                })()}
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {traceResults.map((res, i) => {
+                                const maxHopsFound = Math.max(0, ...traceResults.map(r => r.hops.length));
+                                return (
+                                    <tr key={i}>
+                                        <td style={{ position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 1 }}>{res.target}</td>
+                                        <td
+                                            className={res.ping_ok === null ? "status-pending" : (res.ping_ok ? "status-ok" : "status-ng")}
+                                            style={{ left: '150px' }}
+                                        >
+                                            {res.ping_ok === null ? "実行中" : (res.ping_ok ? "OK" : "NG")}
+                                        </td>
+                                        {Array.from({ length: Math.max(1, maxHopsFound) }).map((_, j) => {
+                                            const hop = res.hops[j];
+                                            return (
+                                                <td key={j} style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                                                    {hop ? (
+                                                        <>
+                                                            <div style={{ fontWeight: 'bold', color: hop.ip === "*" ? "#ff4d4d" : "inherit" }}>{hop.ip}</div>
+                                                            {hop.fqdn && <div style={{ opacity: 0.8, color: 'var(--primary)', fontStyle: 'italic' }}>{hop.fqdn}</div>}
+                                                            <div style={{ opacity: 0.6 }}>{hop.time_ms !== null ? `${hop.time_ms.toFixed(1)}ms` : "-"}</div>
+                                                        </>
+                                                    ) : "-"}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                );
+                            })}
+                            {traceResults.length === 0 && (
+                                <tr>
+                                    <td colSpan={3} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                                        TraceRouteを実行するには「開始」ボタンを押してください
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </>
     );

@@ -848,3 +848,49 @@ button:disabled {
   color: var(--primary);
   opacity: 1 !important;
 }
+/* Scroll Arrow Styles */
+.scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(187, 134, 252, 0.8);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  border-radius: 50%;
+  font-size: 24px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scroll-arrow:hover {
+  background: var(--primary);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 15px rgba(187, 134, 252, 0.4);
+}
+
+.scroll-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.scroll-arrow.left {
+  left: 10px;
+}
+
+.scroll-arrow.right {
+  right: 10px;
+}
+
+.scroll-arrow span {
+  line-height: 1;
+  position: relative;
+  top: -1px;
+}
