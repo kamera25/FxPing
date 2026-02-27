@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { save } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 // Types
-import { PingResult, Target, TraceResult, TargetStats, Settings } from "./types";
+import { PingResult, Target, TraceResult, TraceHop, TargetStats, Settings } from "./types";
 
 // Components
 import Header from "./components/Header";
@@ -161,6 +162,55 @@ function App() {
   };
 
   useEffect(() => {
+    const unlistenStart = listen<TraceResult>("trace-start", (event) => {
+      setTraceResults(prev => {
+        // If target already exists in recent results, update it, otherwise add new
+        const exists = prev.some(r => r.target === event.payload.target);
+        if (exists) {
+          return prev.map(r => r.target === event.payload.target ? event.payload : r);
+        }
+        return [...prev, event.payload];
+      });
+    });
+
+    const unlistenHop = listen<TraceHop>("trace-hop", (event) => {
+      setTraceResults(prev => {
+        return prev.map(r => {
+          if (r.target === event.payload.target) {
+            const existingHopIndex = r.hops.findIndex(h => h.ttl === event.payload.ttl);
+            let nextHops = [...r.hops];
+            if (existingHopIndex > -1) {
+              nextHops[existingHopIndex] = event.payload;
+            } else {
+              nextHops.push(event.payload);
+            }
+            nextHops.sort((a, b) => a.ttl - b.ttl);
+            return { ...r, hops: nextHops };
+          }
+          return r;
+        });
+      });
+    });
+
+    const unlistenPing = listen<{ target: string, ping_ok: boolean }>("trace-ping", (event) => {
+      setTraceResults(prev => {
+        return prev.map(r => {
+          if (r.target === event.payload.target) {
+            return { ...r, ping_ok: event.payload.ping_ok };
+          }
+          return r;
+        });
+      });
+    });
+
+    return () => {
+      unlistenStart.then(u => u());
+      unlistenHop.then(u => u());
+      unlistenPing.then(u => u());
+    };
+  }, []);
+
+  useEffect(() => {
     invoke<string>("get_platform").then(setPlatform);
 
     const timer = setInterval(() => {
@@ -304,7 +354,6 @@ function App() {
 
   const runTraceRoute = async () => {
     setIsTracing(true);
-    const newTraceResults: TraceResult[] = [];
 
     for (const target of targets) {
       try {
@@ -316,13 +365,15 @@ function App() {
           resolveHostnames: settings.resolveHostnames,
           protocol: traceProtocol
         });
-        newTraceResults.push(res);
+        // Full result received (command returned)
+        setTraceResults(prev => {
+          return prev.map(r => r.target === res.target ? res : r);
+        });
       } catch (e) {
         console.error("Trace error", e);
       }
     }
 
-    setTraceResults(newTraceResults);
     setIsTracing(false);
   };
 

@@ -71,8 +71,11 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                             return (
                                 <tr key={i}>
                                     <td style={{ position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 1 }}>{res.target}</td>
-                                    <td className={res.ping_ok ? "status-ok" : "status-ng"} style={{ position: 'sticky', left: '150px', background: 'var(--bg-secondary)', zIndex: 1 }}>
-                                        {res.ping_ok ? "OK" : "NG"}
+                                    <td
+                                        className={res.ping_ok === null ? "status-pending" : (res.ping_ok ? "status-ok" : "status-ng")}
+                                        style={{ position: 'sticky', left: '150px', background: 'var(--bg-secondary)', zIndex: 1 }}
+                                    >
+                                        {res.ping_ok === null ? "実行中" : (res.ping_ok ? "OK" : "NG")}
                                     </td>
                                     {Array.from({ length: Math.max(1, maxHopsFound) }).map((_, j) => {
                                         const hop = res.hops[j];

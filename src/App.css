@@ -181,6 +181,12 @@ tr:hover {
   font-weight: bold;
 }
 
+.status-pending {
+  color: #ffb74d;
+  /* Light orange */
+  font-weight: bold;
+}
+
 .status-ng {
   color: var(--error);
   font-weight: bold;

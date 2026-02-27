@@ -32,6 +32,7 @@ async fn ping_target(
 
 #[tauri::command]
 async fn traceroute_target(
+    app: tauri::AppHandle,
     target: String,
     timeout_ms: u64,
     payload_size: usize,
@@ -49,7 +50,7 @@ async fn traceroute_target(
         resolve_hostnames,
     )
     .await?;
-    tracer.trace().await
+    tracer.trace(app).await
 }
 
 #[tauri::command]

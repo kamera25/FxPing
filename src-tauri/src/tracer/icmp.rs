@@ -32,10 +32,12 @@ impl ICMPTracer {
 }
 
 impl TracerImpl for ICMPTracer {
-    fn trace(&self) -> TraceFuture<'_> {
+    fn trace(&self, app: tauri::AppHandle) -> TraceFuture<'_> {
         Box::pin(async move {
+            use tauri::Emitter;
             let mut hops = Vec::new();
             let payload = vec![0u8; self.payload_size.value()];
+            let target_str = self.ip.to_string();
 
             for ttl in 1..=self.max_hops.value() {
                 let builder = Config::builder().ttl(ttl as u32);
@@ -47,7 +49,7 @@ impl TracerImpl for ICMPTracer {
                 let mut hop_pinger = hop_client.pinger(self.ip, PingIdentifier(ttl as u16)).await;
                 hop_pinger.timeout(self.timeout.value());
 
-                match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
+                let hop = match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
                     Ok((packet, duration)) => {
                         let hop_ip = match packet {
                             surge_ping::IcmpPacket::V4(p) => p.get_real_dest().into(),
@@ -59,25 +61,29 @@ impl TracerImpl for ICMPTracer {
                             None
                         };
 
-                        hops.push(TraceHop {
+                        TraceHop {
+                            target: target_str.clone(),
                             ttl,
                             ip: Some(hop_ip),
                             fqdn,
                             time_ms: Some(duration.as_secs_f64() * 1000.0),
-                        });
-
-                        if hop_ip == self.ip {
-                            break;
                         }
                     }
-                    Err(_) => {
-                        hops.push(TraceHop {
-                            ttl,
-                            ip: None,
-                            fqdn: None,
-                            time_ms: None,
-                        });
-                    }
+                    Err(_) => TraceHop {
+                        target: target_str.clone(),
+                        ttl,
+                        ip: None,
+                        fqdn: None,
+                        time_ms: None,
+                    },
+                };
+
+                let _ = app.emit("trace-hop", hop.clone());
+                let hop_ip = hop.ip;
+                hops.push(hop);
+
+                if hop_ip == Some(self.ip) {
+                    break;
                 }
             }
             Ok(hops)

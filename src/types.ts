@@ -13,15 +13,16 @@ export interface Target {
 }
 
 export interface TraceHop {
+    target: string;
     ttl: number;
-    ip: string;
+    ip: string | null;
     fqdn?: string | null;
     time_ms: number | null;
 }
 
 export interface TraceResult {
     target: string;
-    ping_ok: boolean;
+    ping_ok: boolean | null;
     hops: TraceHop[];
     timestamp: string;
 }

@@ -16,6 +16,7 @@ use udp::UDPTracer;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceHop {
+    pub target: String,
     pub ttl: u32,
     pub ip: Option<IpAddr>,
     pub fqdn: Option<String>,
@@ -25,7 +26,7 @@ pub struct TraceHop {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceResult {
     pub target: String,
-    pub ping_ok: bool,
+    pub ping_ok: Option<bool>,
     pub hops: Vec<TraceHop>,
     pub timestamp: String,
 }
@@ -33,7 +34,7 @@ pub struct TraceResult {
 pub type TraceFuture<'a> = Pin<Box<dyn Future<Output = Result<Vec<TraceHop>, String>> + Send + 'a>>;
 
 pub trait TracerImpl: Send + Sync {
-    fn trace(&self) -> TraceFuture<'_>;
+    fn trace(&self, app: tauri::AppHandle) -> TraceFuture<'_>;
 }
 
 pub struct Tracer {
@@ -95,8 +96,20 @@ impl Tracer {
         })
     }
 
-    pub async fn trace(&self) -> Result<TraceResult, String> {
+    pub async fn trace(&self, app: tauri::AppHandle) -> Result<TraceResult, String> {
+        use tauri::Emitter;
+
         let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
+
+        let _ = app.emit(
+            "trace-start",
+            TraceResult {
+                target: self.target.clone(),
+                ping_ok: None,
+                hops: Vec::new(),
+                timestamp: timestamp.clone(),
+            },
+        );
 
         // Generic client for reachability check
         let config = match self.ip {
@@ -109,11 +122,19 @@ impl Tracer {
         let payload = vec![0u8; self.payload_size.value()];
         let ping_ok = pinger.ping(PingSequence(0), &payload).await.is_ok();
 
-        let hops = self.inner.trace().await?;
+        let _ = app.emit(
+            "trace-ping",
+            serde_json::json!({
+                "target": self.target.clone(),
+                "ping_ok": ping_ok,
+            }),
+        );
+
+        let hops = self.inner.trace(app).await?;
 
         Ok(TraceResult {
             target: self.target.clone(),
-            ping_ok,
+            ping_ok: Some(ping_ok),
             hops,
             timestamp,
         })
@@ -159,6 +180,7 @@ mod tests {
     #[test]
     fn test_trace_result_serialization() {
         let hop = TraceHop {
+            target: "8.8.8.8".to_string(),
             ttl: 1,
             ip: Some("192.168.1.1".parse().unwrap()),
             fqdn: Some("router.local".to_string()),
@@ -166,7 +188,7 @@ mod tests {
         };
         let result = TraceResult {
             target: "8.8.8.8".to_string(),
-            ping_ok: true,
+            ping_ok: Some(true),
             hops: vec![hop],
             timestamp: "2024/01/01 12:00:00".to_string(),
         };

@@ -23,19 +23,24 @@ impl UDPTracer {
 }
 
 impl TracerImpl for UDPTracer {
-    fn trace(&self) -> TraceFuture<'_> {
+    fn trace(&self, app: tauri::AppHandle) -> TraceFuture<'_> {
         Box::pin(async move {
+            use tauri::Emitter;
+            let target_ip_str = self.ip.to_string();
+
             #[cfg(unix)]
             {
+                use tokio::io::{AsyncBufReadExt, BufReader};
+                use std::process::Stdio;
+
                 let timeout_secs = (self.timeout.as_millis() / 1000).max(1);
-                let target_ip = self.ip.to_string();
 
                 let cmd = match self.ip {
                     IpAddr::V4(_) => "traceroute",
                     IpAddr::V6(_) => "traceroute6",
                 };
 
-                let output = tokio::process::Command::new(cmd)
+                let mut child = tokio::process::Command::new(cmd)
                     .arg("-n")
                     .arg("-q")
                     .arg("1")
@@ -43,27 +48,31 @@ impl TracerImpl for UDPTracer {
                     .arg(timeout_secs.to_string())
                     .arg("-m")
                     .arg(self.max_hops.value().to_string())
-                    .arg(&target_ip)
-                    .output()
-                    .await;
+                    .arg(&target_ip_str)
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| format!("Failed to spawn traceroute command: {}", e))?;
 
-                match output {
-                    Ok(output) => {
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        let hops = parse_traceroute_output(&stdout, &target_ip, self.resolve_hostnames);
-                        Ok(hops)
+                let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+                let mut reader = BufReader::new(stdout).lines();
+                let mut hops = Vec::new();
+
+                while let Ok(Some(line)) = reader.next_line().await {
+                    if let Some(hop) = parse_line_to_hop(&line, &target_ip_str, self.resolve_hostnames) {
+                        let _ = app.emit("trace-hop", hop.clone());
+                        hops.push(hop);
                     }
-                    Err(e) => Err(format!(
-                        "UDP traceroute failed to execute system command: {}",
-                        e
-                    )),
                 }
+
+                let _ = child.wait().await;
+                Ok(hops)
             }
             #[cfg(windows)]
             {
                 let ip = self.ip;
                 let timeout = self.timeout.value();
                 let max_hops = self.max_hops.value();
+                let resolve_hostnames = self.resolve_hostnames;
 
                 tokio::task::spawn_blocking(move || {
                     let mut hops = Vec::new();
@@ -142,18 +151,22 @@ impl TracerImpl for UDPTracer {
                             }
                         }
 
-                        let fqdn = if self.resolve_hostnames {
+                        let fqdn = if resolve_hostnames {
                             hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
                         } else {
                             None
                         };
 
-                        hops.push(TraceHop {
+                        let hop = TraceHop {
+                            target: target_ip_str.clone(),
                             ttl: ttl as u32,
                             ip: hop_ip,
                             fqdn,
                             time_ms,
-                        });
+                        };
+
+                        let _ = app.emit("trace-hop", hop.clone());
+                        hops.push(hop);
 
                         if hop_ip == Some(ip) {
                             break;
@@ -168,53 +181,48 @@ impl TracerImpl for UDPTracer {
 }
 
 #[cfg(unix)]
-fn parse_traceroute_output(stdout: &str, target_ip: &str, resolve_hostnames: bool) -> Vec<TraceHop> {
-    let mut hops = Vec::new();
-    for line in stdout.lines() {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.is_empty() {
-            continue;
-        }
+fn parse_line_to_hop(line: &str, target_ip: &str, resolve_hostnames: bool) -> Option<TraceHop> {
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.is_empty() {
+        return None;
+    }
 
-        if let Ok(ttl) = parts[0].parse::<u32>() {
-            if parts.len() >= 2 && parts[1] == "*" {
-                hops.push(TraceHop {
-                    ttl,
-                    ip: None,
-                    fqdn: None,
-                    time_ms: None,
-                });
-            } else if parts.len() >= 3 {
-                let hop_ip_str = parts[1].to_string();
-                let hop_ip = IpAddr::from_str(&hop_ip_str).ok();
-                let mut time_ms = None;
-                for i in 2..parts.len() {
-                    if parts[i] == "ms" {
-                        time_ms = parts[i - 1].parse::<f64>().ok();
-                        break;
-                    }
-                }
-
-                let fqdn = if resolve_hostnames {
-                    hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
-                } else {
-                    None
-                };
-
-                hops.push(TraceHop {
-                    ttl,
-                    ip: hop_ip,
-                    fqdn,
-                    time_ms,
-                });
-
-                if hop_ip_str == target_ip {
+    if let Ok(ttl) = parts[0].parse::<u32>() {
+        if parts.len() >= 2 && parts[1] == "*" {
+            return Some(TraceHop {
+                target: target_ip.to_string(),
+                ttl,
+                ip: None,
+                fqdn: None,
+                time_ms: None,
+            });
+        } else if parts.len() >= 3 {
+            let hop_ip_str = parts[1].to_string();
+            let hop_ip = IpAddr::from_str(&hop_ip_str).ok();
+            let mut time_ms = None;
+            for i in 2..parts.len() {
+                if parts[i] == "ms" {
+                    time_ms = parts[i - 1].parse::<f64>().ok();
                     break;
                 }
             }
+
+            let fqdn = if resolve_hostnames {
+                hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
+            } else {
+                None
+            };
+
+            return Some(TraceHop {
+                target: target_ip.to_string(),
+                ttl,
+                ip: hop_ip,
+                fqdn,
+                time_ms,
+            });
         }
     }
-    hops
+    None
 }
 
 #[cfg(test)]
@@ -248,56 +256,48 @@ mod tests {
 
     #[test]
     #[cfg(unix)]
-    fn test_parse_traceroute_output() {
+    fn test_parse_line_to_hop() {
         let target_ip = "8.8.8.8";
-        let stdout = r#"
-1  192.168.1.1  0.5 ms
-2  *
-3  8.8.8.8  10.2 ms
-"#;
-        let hops = parse_traceroute_output(stdout, target_ip, true);
+        let line1 = "1  192.168.1.1  0.5 ms";
+        let hop1 = parse_line_to_hop(line1, target_ip, true).unwrap();
+        assert_eq!(hop1.ttl, 1);
+        assert_eq!(hop1.ip, Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
+        assert_eq!(hop1.time_ms, Some(0.5));
 
-        assert_eq!(hops.len(), 3);
+        let line2 = "2  *";
+        let hop2 = parse_line_to_hop(line2, target_ip, true).unwrap();
+        assert_eq!(hop2.ttl, 2);
+        assert_eq!(hop2.ip, None);
 
-        assert_eq!(hops[0].ttl, 1);
-        assert_eq!(hops[0].ip, Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
-        assert_eq!(hops[0].time_ms, Some(0.5));
-
-        assert_eq!(hops[1].ttl, 2);
-        assert_eq!(hops[1].ip, None);
-        assert_eq!(hops[1].time_ms, None);
-
-        assert_eq!(hops[2].ttl, 3);
-        assert_eq!(hops[2].ip, Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))));
-        assert_eq!(hops[2].time_ms, Some(10.2));
+        let line3 = "3  8.8.8.8  10.2 ms";
+        let hop3 = parse_line_to_hop(line3, target_ip, true).unwrap();
+        assert_eq!(hop3.ttl, 3);
+        assert_eq!(hop3.ip, Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))));
+        assert_eq!(hop3.time_ms, Some(10.2));
     }
 
     #[test]
     #[cfg(unix)]
-    fn test_parse_traceroute_output_ipv6() {
+    fn test_parse_line_to_hop_ipv6() {
         let target_ip = "2001:4860:4860::8888";
-        let stdout = r#"
-1  2001:db8::1  0.5 ms
-2  *
-3  2001:4860:4860::8888  10.2 ms
-"#;
-        let hops = parse_traceroute_output(stdout, target_ip, true);
+        let line1 = "1  2001:db8::1  0.5 ms";
+        let hop1 = parse_line_to_hop(line1, target_ip, true).unwrap();
+        assert_eq!(hop1.ttl, 1);
+        assert_eq!(hop1.ip, Some("2001:db8::1".parse::<IpAddr>().unwrap()));
+        assert_eq!(hop1.time_ms, Some(0.5));
 
-        assert_eq!(hops.len(), 3);
+        let line2 = "2  *";
+        let hop2 = parse_line_to_hop(line2, target_ip, true).unwrap();
+        assert_eq!(hop2.ttl, 2);
+        assert_eq!(hop2.ip, None);
 
-        assert_eq!(hops[0].ttl, 1);
-        assert_eq!(hops[0].ip, Some("2001:db8::1".parse::<IpAddr>().unwrap()));
-        assert_eq!(hops[0].time_ms, Some(0.5));
-
-        assert_eq!(hops[1].ttl, 2);
-        assert_eq!(hops[1].ip, None);
-        assert_eq!(hops[1].time_ms, None);
-
-        assert_eq!(hops[2].ttl, 3);
+        let line3 = "3  2001:4860:4860::8888  10.2 ms";
+        let hop3 = parse_line_to_hop(line3, target_ip, true).unwrap();
+        assert_eq!(hop3.ttl, 3);
         assert_eq!(
-            hops[2].ip,
+            hop3.ip,
             Some("2001:4860:4860::8888".parse::<IpAddr>().unwrap())
         );
-        assert_eq!(hops[2].time_ms, Some(10.2));
+        assert_eq!(hop3.time_ms, Some(10.2));
     }
 }
