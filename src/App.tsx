@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { save } from "@tauri-apps/plugin-dialog";
-import "./App.css";
+import styles from "./App.module.css";
 
 // Types
 import { PingResult, Target, TraceResult, TraceHop, TargetStats, Settings, TableSize } from "./types";
@@ -762,11 +762,11 @@ function App() {
   }, [results, isRunActive, settings.logs.autoSave]);
 
   return (
-    <div className="app-container">
+    <div className={styles.appContainer}>
       <Header showSettings={showSettings} setShowSettings={setShowSettings} />
       <TabBar activeTab={activeTab} setActiveTab={setActiveTab} setShowSettings={setShowSettings} handleSave={handleSave} />
 
-      <div className="tab-content">
+      <div className={styles.tabContent}>
         {showSettings && (
           <SettingsModal
             settings={settings}

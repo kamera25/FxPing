@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Settings } from '../../types';
+import styles from '../SettingsModal.module.css';
 
 interface PingSettingsProps {
     settings: Settings;
@@ -16,13 +17,13 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
     }, []);
 
     return (
-        <div className="settings-container" style={{ padding: 0, background: 'transparent' }}>
-            <div className="settings-section" style={{ maxWidth: 'none' }}>
+        <div className={styles.contentBody} style={{ padding: 0 }}>
+            <div className={styles.settingsSection}>
                 <h3>基本設定</h3>
-                <div className="settings-grid">
-                    <div className="field-group">
+                <div className={styles.settingsGrid}>
+                    <div className={styles.fieldGroup}>
                         <label>繰り返し回数:</label>
-                        <div className="field-row">
+                        <div className={styles.fieldRow}>
                             <input
                                 ref={firstInputRef}
                                 type="number"
@@ -35,12 +36,12 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="UIの応答性とメモリリソースを考慮した1〜99,999回の範囲"
                             />
-                            <span className="unit">回</span>
+                            <span className={styles.unit}>回</span>
                         </div>
                     </div>
-                    <div className="field-group">
+                    <div className={styles.fieldGroup}>
                         <label>実行間隔:</label>
-                        <div className="field-row">
+                        <div className={styles.fieldRow}>
                             <input
                                 type="number"
                                 min={100}
@@ -52,12 +53,12 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="ICMPフラッディング（DOS攻撃と誤認されるリスク）を防止するための最小100ms制限"
                             />
-                            <span className="unit">ミリ秒</span>
+                            <span className={styles.unit}>ミリ秒</span>
                         </div>
                     </div>
-                    <div className="field-group">
+                    <div className={styles.fieldGroup}>
                         <label>ブロックサイズ:</label>
-                        <div className="field-row">
+                        <div className={styles.fieldRow}>
                             <input
                                 type="number"
                                 min={0}
@@ -69,12 +70,12 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="IPv4最大パケットサイズ(65535)からIPヘッダ(20)とICMPヘッダ(8)を差し引いた65,507バイトが最大実効ペイロードサイズ"
                             />
-                            <span className="unit">バイト</span>
+                            <span className={styles.unit}>バイト</span>
                         </div>
                     </div>
-                    <div className="field-group">
+                    <div className={styles.fieldGroup}>
                         <label>タイムアウト:</label>
-                        <div className="field-row">
+                        <div className={styles.fieldRow}>
                             <input
                                 type="number"
                                 min={1}
@@ -86,12 +87,12 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="バックエンド実装の制限（Timeoutオブジェクト：最大300,000ms）に準拠。0は無効。"
                             />
-                            <span className="unit">ミリ秒</span>
+                            <span className={styles.unit}>ミリ秒</span>
                         </div>
                     </div>
-                    <div className="field-group">
+                    <div className={styles.fieldGroup}>
                         <label>TTL:</label>
-                        <div className="field-row">
+                        <div className={styles.fieldRow}>
                             <input
                                 type="number"
                                 min={1}
@@ -108,41 +109,41 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                 </div>
             </div>
 
-            <div className="settings-section" style={{ maxWidth: 'none' }}>
+            <div className={styles.settingsSection}>
                 <h3>繰り返しモード</h3>
-                <div className="radio-group" style={{ display: 'flex', gap: '20px' }}>
-                    <label className="checkbox-label">
+                <div className={styles.radioGroup}>
+                    <label className={styles.checkboxLabel}>
                         <input type="radio" checked={settings.repeatMode === 'parallel'} onChange={() => setSettings({ ...settings, repeatMode: 'parallel' })} />
                         並列実行 (AB-AB)
                     </label>
-                    <label className="checkbox-label">
+                    <label className={styles.checkboxLabel}>
                         <input type="radio" checked={settings.repeatMode === 'sequential'} onChange={() => setSettings({ ...settings, repeatMode: 'sequential' })} />
                         順次実行 (A-A-B-B)
                     </label>
-                    <label className="checkbox-label">
+                    <label className={styles.checkboxLabel}>
                         <input type="radio" checked={settings.repeatMode === 'robin'} onChange={() => setSettings({ ...settings, repeatMode: 'robin' })} />
                         ラウンドロビン (A-B-A-B)
                     </label>
                 </div>
             </div>
 
-            <div className="settings-section" style={{ maxWidth: 'none' }}>
-                <label className="checkbox-label">
+            <div className={styles.settingsSection}>
+                <label className={styles.checkboxLabel}>
                     <input type="checkbox" checked={settings.periodicExecution} onChange={e => setSettings({ ...settings, periodicExecution: e.target.checked })} />
                     定期的に実行する
                 </label>
-                <div className="field-row" style={{ marginTop: '10px', marginLeft: '24px' }}>
+                <div className={styles.fieldRow} style={{ marginTop: '10px', marginLeft: '24px' }}>
                     <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} />
-                    <span className="unit">秒待機</span>
+                    <span className={styles.unit}>秒待機</span>
                 </div>
             </div>
 
-            <div className="settings-section" style={{ maxWidth: 'none' }}>
+            <div className={styles.settingsSection}>
                 <h3>TraceRoute オプション</h3>
-                <div className="settings-grid">
-                    <div className="field-group">
+                <div className={styles.settingsGrid}>
+                    <div className={styles.fieldGroup}>
                         <label>最大HOPS:</label>
-                        <div className="field-row">
+                        <div className={styles.fieldRow}>
                             <input
                                 type="number"
                                 min={1}
@@ -155,9 +156,9 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                             />
                         </div>
                     </div>
-                    <div className="field-group">
-                        <div className="field-row" style={{ marginTop: '22px' }}>
-                            <label className="checkbox-label">
+                    <div className={styles.fieldGroup}>
+                        <div className={styles.fieldRow} style={{ marginTop: '22px' }}>
+                            <label className={styles.checkboxLabel}>
                                 <input
                                     type="checkbox"
                                     checked={settings.resolveHostnames}

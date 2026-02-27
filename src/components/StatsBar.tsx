@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatDate } from '../utils/date';
+import styles from './StatsBar.module.css';
 
 interface StatsBarProps {
     targetCount: number;
@@ -15,22 +16,18 @@ const StatsBar: React.FC<StatsBarProps> = ({
     currentTime,
     nextPingTimeMs
 }) => {
-    // Show countdown if available. 
-    // If it's parallel mode and isRepeating, we might want to hide intra-run info, 
-    // but the periodic wait should probably be shown.
-    // For now, let's keep it simple: show if we have a value.
     const showCountdown = nextPingTimeMs !== null;
 
     return (
-        <div className="stats-bar">
+        <div className={styles.statsBar}>
             <div>対象数: {targetCount}</div>
             <div>パケット合計: {resultCount}</div>
             {showCountdown && (
-                <div style={{ marginLeft: '15px', color: '#66d9ff' }}>
+                <div className={styles.countdown}>
                     次のPing: {Math.ceil(nextPingTimeMs / 1000)}秒
                 </div>
             )}
-            <div style={{ flex: 1, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div className={styles.time}>
                 {formatDate(currentTime)}
             </div>
         </div>

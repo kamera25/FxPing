@@ -1,5 +1,6 @@
 import React from 'react';
 import { Target } from '../../types';
+import styles from './TargetsTab.module.css';
 
 interface TargetsTabProps {
     targets: Target[];
@@ -38,19 +39,17 @@ const TargetsTab: React.FC<TargetsTabProps> = ({
 }) => {
     return (
         <div
-            className="target-list"
+            className={styles.targetList}
             onDragOver={(e) => e.preventDefault()}
             onDragEnter={(e) => e.preventDefault()}
             onDrop={handleTargetListDrop}
-            style={{ minHeight: '300px' }}
         >
-            <div className={`toolbar ${isInputError ? 'shake-animation' : ''}`} style={{ margin: '0 0 16px 0', borderRadius: '4px' }}>
-                <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+            <div className={`${styles.toolbar} ${isInputError ? styles.shake : ''}`}>
+                <div className={styles.inputGroup}>
+                    <div className={styles.inputRow}>
                         <input
                             type="text"
-                            className={isInputError ? 'input-error' : ''}
-                            style={{ flex: 2 }}
+                            className={`${isInputError ? styles.inputError : ''} ${styles.inputHost}`}
                             placeholder="IPアドレスまたはホスト名..."
                             value={newTarget}
                             onChange={(e) => setNewTarget(e.target.value)}
@@ -58,7 +57,7 @@ const TargetsTab: React.FC<TargetsTabProps> = ({
                         />
                         <input
                             type="text"
-                            style={{ flex: 1 }}
+                            className={styles.inputRemarks}
                             placeholder="備考..."
                             value={newRemarks}
                             onChange={(e) => setNewRemarks(e.target.value)}
@@ -69,54 +68,42 @@ const TargetsTab: React.FC<TargetsTabProps> = ({
                 </div>
             </div>
             {targets.map(t => (
-                <div key={t.host} className="target-item">
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 'bold', minWidth: '120px' }}>{t.host}</span>
-                        <span style={{ opacity: 0.7, fontSize: '0.9em' }}>{t.remarks}</span>
+                <div key={t.host} className={styles.targetItem}>
+                    <div className={styles.targetInfo}>
+                        <span className={styles.hostText}>{t.host}</span>
+                        <span className={styles.remarksText}>{t.remarks}</span>
                     </div>
-                    <div className="target-actions">
-                        <button className="btn-small btn-danger" onClick={() => removeTarget(t.host)}>削除</button>
+                    <div className={styles.targetActions}>
+                        <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => removeTarget(t.host)}>削除</button>
                     </div>
                 </div>
             ))}
 
-            <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+            <div className={styles.expingSection}>
                 {!showExPingInput ? (
                     <button
-                        className="btn-full"
-                        style={{ width: '100%', background: 'rgba(255, 255, 255, 0.73)', border: '1px dashed rgba(255,255,255,0.2)' }}
+                        className={styles.btnFull}
                         onClick={() => setShowExPingInput(true)}
                     >
                         ExPing形式で定義…
                     </button>
                 ) : (
                     <div className="exping-input-area">
-                        <div style={{ marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>
+                        <div className={styles.expingLabel}>
                             ExPing形式で入力 (既存の定義を上書き・defファイルからドロップで上書き可)
                         </div>
                         <textarea
-                            style={{
-                                width: '100%',
-                                height: '120px',
-                                background: 'rgba(0,0,0,0.2)',
-                                color: 'white',
-                                border: '1px solid var(--primary)',
-                                borderRadius: '4px',
-                                padding: '8px',
-                                fontSize: '13px',
-                                fontFamily: 'monospace',
-                                resize: 'vertical'
-                            }}
+                            className={styles.expingTextarea}
                             placeholder="'監視対象 サーバ群&#10;localhost 自機 1&#10;8.8.8.8 Google_Public_DNS#1"
                             value={exPingText}
                             onChange={(e) => setExPingText(e.target.value)}
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={handleDrop}
                         />
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                            <button style={{ flex: 1 }} onClick={handleExPingApply}>適応</button>
+                        <div className={styles.expingActions}>
+                            <button className={styles.btnApply} onClick={handleExPingApply}>適応</button>
                             <button
-                                style={{ flex: 1, background: 'rgba(255, 255, 255, 0.46)' }}
+                                className={styles.btnCancel}
                                 onClick={() => { setShowExPingInput(false); setExPingText(""); }}
                             >
                                 キャンセル

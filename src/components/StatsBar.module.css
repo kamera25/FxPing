@@ -1,0 +1,24 @@
+.statsBar {
+    height: 32px;
+    background: var(--surface);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    gap: 20px;
+}
+
+.countdown {
+    margin-left: 15px;
+    color: #66d9ff;
+}
+
+.time {
+    flex: 1;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

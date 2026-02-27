@@ -2,6 +2,7 @@ import React, { RefObject, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { PingResult, TableSize } from '../../types';
+import styles from './ResultsTab.module.css';
 
 interface ResultsTabProps {
     isPinging: boolean;
@@ -41,37 +42,29 @@ const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: 
 
     return (
         <tr
-            className={`${isFailed ? "row-failed" : ""} ${isFailed && tableSize === 'xsmall' ? "row-hoverable" : ""}`}
+            className={`${isFailed ? styles.rowFailed : ''}`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             style={{ cursor: (isFailed && tableSize === 'xsmall') ? 'help' : 'default' }}
         >
-            <td className={!isFailed ? "status-ok" : "status-ng"}>
+            <td className={!isFailed ? styles.statusOk : styles.statusNg}>
                 {!isFailed ? "● OK" : "✖ NG"}
             </td>
             <td>{displayTimestamp}</td>
             <td>{res.target}</td>
             <td>{res.ip}</td>
             <td>{res.time_ms !== null ? `${res.time_ms.toFixed(2)} ms` : "-"}</td>
-            <td
-                style={{ opacity: 0.6, fontSize: tableSize === 'xsmall' ? '9px' : '12px', position: 'relative' }}
-            >
+            <td className={styles.detailsCell} style={{ fontSize: tableSize === 'xsmall' ? '9px' : '12px' }}>
                 {displayStatusText}
                 {showPopover && typeof document !== 'undefined' && createPortal(
                     <div
-                        className="status-popover"
+                        className={styles.popover}
                         style={{
-                            position: 'fixed',
                             left: `${popoverPos.x}px`,
                             top: `${popoverPos.y}px`,
-                            bottom: 'auto',
-                            transform: 'translate(-50%, -100%)',
-                            marginTop: '-12px',
-                            zIndex: 10000 // Ensure it's above everything
                         }}
                     >
-                        <div className="popover-content">{res.status}</div>
-                        <div className="popover-arrow"></div>
+                        <div className={styles.popoverContent}>{res.status}</div>
                     </div>,
                     document.body
                 )}
@@ -93,32 +86,36 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
     setTableSize
 }) => {
 
+    const sizeClass = tableSize === 'xsmall' ? styles.tableXsmall :
+        tableSize === 'medium' ? styles.tableMedium :
+            styles.tableLarge;
+
     return (
         <>
-            <div className="toolbar">
+            <div className={styles.toolbar}>
                 <button
                     onClick={() => setIsPinging(!isPinging)}
-                    style={{ background: isPinging ? '#cf6679' : '#4caf50', minWidth: '100px' }}
+                    className={isPinging ? styles.btnStop : styles.btnStart}
                 >
                     {isPinging ? "■ 停止" : "▶ 開始"}
                 </button>
                 <button onClick={() => { setResults([]); setTargetStats({}); }}>履歴クリア</button>
 
-                <div className="size-selector">
+                <div className={styles.sizeSelector}>
                     <button
-                        className={`size-btn ${tableSize === 'xsmall' ? 'active' : ''}`}
+                        className={`${styles.sizeBtn} ${tableSize === 'xsmall' ? styles.active : ''}`}
                         onClick={() => setTableSize('xsmall')}
                     >
                         小
                     </button>
                     <button
-                        className={`size-btn ${tableSize === 'medium' ? 'active' : ''}`}
+                        className={`${styles.sizeBtn} ${tableSize === 'medium' ? styles.active : ''}`}
                         onClick={() => setTableSize('medium')}
                     >
                         中
                     </button>
                     <button
-                        className={`size-btn ${tableSize === 'large' ? 'active' : ''}`}
+                        className={`${styles.sizeBtn} ${tableSize === 'large' ? styles.active : ''}`}
                         onClick={() => setTableSize('large')}
                     >
                         大
@@ -126,8 +123,8 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
                 </div>
             </div>
 
-            <div className={`table-container table-${tableSize}`} ref={scrollRef} onScroll={handleScroll}>
-                <table>
+            <div className={`${styles.tableContainer} ${sizeClass}`} ref={scrollRef} onScroll={handleScroll}>
+                <table className={styles.table}>
                     <thead>
                         <tr>
                             <th style={{ width: '80px' }}>ステータス</th>

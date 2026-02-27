@@ -1,0 +1,166 @@
+.targetList {
+    padding: 16px;
+    min-height: 300px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin: 0 0 16px 0;
+    border-radius: 4px;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.inputRow {
+    display: flex;
+    gap: 8px;
+}
+
+.inputHost {
+    flex: 2;
+}
+
+.inputRemarks {
+    flex: 1;
+}
+
+.inputError {
+    border-color: var(--error) !important;
+    box-shadow: 0 0 0 1px var(--error);
+}
+
+.targetItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.targetInfo {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.hostText {
+    font-weight: bold;
+    min-width: 120px;
+}
+
+.remarksText {
+    opacity: 0.7;
+    font-size: 0.9em;
+}
+
+.targetActions {
+    display: flex;
+    gap: 8px;
+}
+
+.expingSection {
+    margin-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+}
+
+.btnFull {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    color: var(--on-background);
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btnFull:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.expingLabel {
+    margin-bottom: 8px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.expingTextarea {
+    width: 100%;
+    height: 120px;
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    outline: none;
+    resize: vertical;
+}
+
+.expingActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btnApply {
+    flex: 1;
+}
+
+.btnCancel {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.shake {
+    animation: shakeAnimation 0.5s cubic-bezier(.36, .07, .19, .97) both;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+@keyframes shakeAnimation {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+.btnDanger {
+    background: var(--error);
+    color: white;
+}
+
+.btnSmall {
+    padding: 4px 8px;
+    font-size: 11px;
+}

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { TraceResult, TableSize } from '../../types';
+import styles from './TraceRouteTab.module.css';
 
 interface TraceRouteTabProps {
     runTraceRoute: () => Promise<void>;
@@ -30,7 +31,6 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
         const container = scrollContainerRef.current;
         if (container) {
             const { scrollLeft, scrollWidth, clientWidth } = container;
-            // Use a small buffer for precision issues
             setShowLeftArrow(scrollLeft > 5);
             setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 5);
         }
@@ -43,7 +43,6 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
             container.addEventListener('scroll', checkScroll);
             window.addEventListener('resize', checkScroll);
 
-            // Observe changes in traceResults (hops being added)
             const observer = new ResizeObserver(checkScroll);
             observer.observe(container);
 
@@ -63,9 +62,13 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
         }
     };
 
+    const sizeClass = tableSize === 'xsmall' ? styles.tableXsmall :
+        tableSize === 'medium' ? styles.tableMedium :
+            styles.tableLarge;
+
     return (
         <>
-            <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className={styles.toolbar}>
                 <button
                     onClick={runTraceRoute}
                     disabled={isTracing}
@@ -74,19 +77,13 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                     {isTracing ? "追跡中..." : "▶ TraceRoute 開始"}
                 </button>
 
-                <div className="input-group" style={{ width: 'auto' }}>
-                    <span style={{ fontSize: '12px', opacity: 0.7 }}>プロトコル:</span>
+                <div className={styles.inputGroup}>
+                    <span className={styles.label}>プロトコル:</span>
                     <select
+                        className={styles.select}
                         value={traceProtocol}
                         onChange={(e) => onProtocolChange(e.target.value as 'ICMP' | 'UDP')}
                         disabled={isTracing}
-                        style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            background: 'var(--bg-secondary)',
-                            color: 'white',
-                            border: '1px solid var(--border)'
-                        }}
                     >
                         <option value="ICMP">ICMP</option>
                         <option value="UDP">UDP</option>
@@ -95,21 +92,21 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
 
                 <button onClick={() => setTraceResults([])}>履歴クリア</button>
 
-                <div className="size-selector">
+                <div className={styles.sizeSelector}>
                     <button
-                        className={`size-btn ${tableSize === 'xsmall' ? 'active' : ''}`}
+                        className={`${styles.sizeBtn} ${tableSize === 'xsmall' ? styles.active : ''}`}
                         onClick={() => setTableSize('xsmall')}
                     >
                         小
                     </button>
                     <button
-                        className={`size-btn ${tableSize === 'medium' ? 'active' : ''}`}
+                        className={`${styles.sizeBtn} ${tableSize === 'medium' ? styles.active : ''}`}
                         onClick={() => setTableSize('medium')}
                     >
                         中
                     </button>
                     <button
-                        className={`size-btn ${tableSize === 'large' ? 'active' : ''}`}
+                        className={`${styles.sizeBtn} ${tableSize === 'large' ? styles.active : ''}`}
                         onClick={() => setTableSize('large')}
                     >
                         大
@@ -117,10 +114,10 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                 </div>
             </div>
 
-            <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex' }}>
+            <div className={styles.mainContainer}>
                 {showLeftArrow && (
                     <div
-                        className="scroll-arrow left"
+                        className={`${styles.scrollArrow} ${styles.leftArrow}`}
                         onClick={() => scrollHops('left')}
                         title="左にスクロール"
                     >
@@ -130,7 +127,7 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
 
                 {showRightArrow && (
                     <div
-                        className="scroll-arrow right"
+                        className={`${styles.scrollArrow} ${styles.rightArrow}`}
                         onClick={() => scrollHops('right')}
                         title="右にスクロール"
                     >
@@ -140,18 +137,13 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
 
                 <div
                     ref={scrollContainerRef}
-                    className={`table-container table-${tableSize}`}
-                    style={{ overflowX: 'auto', maxWidth: '100%' }}
+                    className={`${styles.tableContainer} ${sizeClass}`}
                 >
-                    <table style={{ minWidth: 'max-content', borderCollapse: 'collapse' }}>
+                    <table className={styles.table}>
                         <thead>
                             <tr>
-                                <th style={{
+                                <th className={styles.stickyColumn} style={{
                                     width: tableSize === 'xsmall' ? '100px' : '150px',
-                                    position: 'sticky',
-                                    left: 0,
-                                    background: 'var(--bg-secondary)',
-                                    zIndex: 2
                                 }}>対象ホスト</th>
                                 <th style={{ width: tableSize === 'xsmall' ? '40px' : '80px' }}>Ping</th>
                                 {(() => {
@@ -167,22 +159,21 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                                 const maxHopsFound = Math.max(0, ...traceResults.map(r => r.hops.length));
                                 return (
                                     <tr key={i}>
-                                        <td style={{ position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 1 }}>{res.target}</td>
+                                        <td className={styles.stickyColumn}>{res.target}</td>
                                         <td
-                                            className={res.ping_ok === null ? "status-pending" : (res.ping_ok ? "status-ok" : "status-ng")}
-                                            style={{ left: tableSize === 'xsmall' ? '100px' : '150px' }}
+                                            className={res.ping_ok === null ? styles.statusPending : (res.ping_ok ? styles.statusOk : styles.statusNg)}
                                         >
-                                            {res.ping_ok === null ? "実行中" : (res.ping_ok ? (tableSize === 'xsmall' ? "OK" : "OK") : (tableSize === 'xsmall' ? "NG" : "NG"))}
+                                            {res.ping_ok === null ? "実行中" : (res.ping_ok ? "OK" : "NG")}
                                         </td>
                                         {Array.from({ length: Math.max(1, maxHopsFound) }).map((_, j) => {
                                             const hop = res.hops[j];
                                             return (
-                                                <td key={j} style={{ fontSize: tableSize === 'xsmall' ? '9px' : '11px', whiteSpace: 'nowrap' }}>
+                                                <td key={j} style={{ fontSize: tableSize === 'xsmall' ? '9px' : '11px' }}>
                                                     {hop ? (
                                                         <>
-                                                            <div style={{ fontWeight: 'bold', color: hop.ip === "*" ? "#ff4d4d" : "inherit" }}>{hop.ip}</div>
-                                                            {hop.fqdn && tableSize !== 'xsmall' && <div style={{ opacity: 0.8, color: 'var(--primary)', fontStyle: 'italic' }}>{hop.fqdn}</div>}
-                                                            <div style={{ opacity: 0.6 }}>{hop.time_ms !== null ? `${hop.time_ms.toFixed(1)}ms` : "-"}</div>
+                                                            <div className={`${styles.hopIp} ${hop.ip === "*" ? styles.hopIpLost : ""}`}>{hop.ip}</div>
+                                                            {hop.fqdn && tableSize !== 'xsmall' && <div className={styles.hopFqdn}>{hop.fqdn}</div>}
+                                                            <div className={styles.hopTime}>{hop.time_ms !== null ? `${hop.time_ms.toFixed(1)}ms` : "-"}</div>
                                                         </>
                                                     ) : "-"}
                                                 </td>
@@ -193,7 +184,7 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                             })}
                             {traceResults.length === 0 && (
                                 <tr>
-                                    <td colSpan={3} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                                    <td colSpan={3} className={styles.emptyMessage}>
                                         TraceRouteを実行するには「開始」ボタンを押してください
                                     </td>
                                 </tr>

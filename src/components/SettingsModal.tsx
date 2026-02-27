@@ -5,6 +5,7 @@ import PingSettings from './settings/PingSettings';
 import LogSettings from './settings/LogSettings';
 import NGSettings from './settings/NGSettings';
 import OKSettings from './settings/OKSettings';
+import styles from './SettingsModal.module.css';
 
 interface SettingsModalProps {
     settings: Settings;
@@ -51,21 +52,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     };
 
     return (
-        <div className="settings-container" style={{ padding: 0 }}>
-            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
-                <h2 style={{ fontSize: '16px', color: 'var(--primary)', margin: 0 }}>設定</h2>
-                <button className="btn-small" onClick={() => setShowSettings(false)}>閉じる</button>
+        <div className={styles.settingsContainer}>
+            <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>設定</h2>
+                <button className={styles.btnSmall} onClick={() => setShowSettings(false)}>閉じる</button>
             </div>
 
-            <div className="settings-header-tabs">
-                <div className={`settings-tab ${settingsTab === 'ping' ? 'active' : ''}`} onClick={() => setSettingsTab('ping')}>Ping実行設定</div>
-                <div className={`settings-tab ${settingsTab === 'general' ? 'active' : ''}`} onClick={() => setSettingsTab('general')}>基本設定</div>
-                <div className={`settings-tab ${settingsTab === 'logs' ? 'active' : ''}`} onClick={() => setSettingsTab('logs')}>ログ保存</div>
-                <div className={`settings-tab ${settingsTab === 'ng' ? 'active' : ''}`} onClick={() => setSettingsTab('ng')}>NG時処理</div>
-                <div className={`settings-tab ${settingsTab === 'ok' ? 'active' : ''}`} onClick={() => setSettingsTab('ok')}>OK時処理</div>
+            <div className={styles.headerTabs}>
+                <div className={`${styles.tab} ${settingsTab === 'ping' ? styles.active : ''}`} onClick={() => setSettingsTab('ping')}>Ping実行設定</div>
+                <div className={`${styles.tab} ${settingsTab === 'general' ? styles.active : ''}`} onClick={() => setSettingsTab('general')}>基本設定</div>
+                <div className={`${styles.tab} ${settingsTab === 'logs' ? styles.active : ''}`} onClick={() => setSettingsTab('logs')}>ログ保存</div>
+                <div className={`${styles.tab} ${settingsTab === 'ng' ? styles.active : ''}`} onClick={() => setSettingsTab('ng')}>NG時処理</div>
+                <div className={`${styles.tab} ${settingsTab === 'ok' ? styles.active : ''}`} onClick={() => setSettingsTab('ok')}>OK時処理</div>
             </div>
 
-            <div className="settings-content-body">
+            <div className={styles.contentBody}>
                 {renderTabContent()}
             </div>
         </div>

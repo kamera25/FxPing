@@ -1,0 +1,177 @@
+.toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: center;
+}
+
+.btnStart {
+    background: var(--success);
+    min-width: 100px;
+}
+
+.btnStop {
+    background: var(--error);
+    min-width: 100px;
+}
+
+.sizeSelector {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    padding: 2px;
+    margin-left: auto;
+}
+
+.sizeBtn {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: none;
+    padding: 4px 12px;
+    font-size: 11px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 40px;
+}
+
+.sizeBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.sizeBtn.active {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.tableContainer {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table thead {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 10;
+}
+
+.table th {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    color: var(--primary);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.table td {
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+}
+
+.table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Row states */
+.statusOk {
+    color: var(--success);
+    font-weight: bold;
+}
+
+.statusNg {
+    color: var(--error);
+    font-weight: bold;
+}
+
+.rowFailed {
+    background: repeating-linear-gradient(45deg,
+            rgba(207, 102, 121, 0.05),
+            rgba(207, 102, 121, 0.05) 10px,
+            rgba(207, 102, 121, 0.1) 10px,
+            rgba(207, 102, 121, 0.1) 20px);
+}
+
+.rowFailed:hover {
+    background: repeating-linear-gradient(45deg,
+            rgba(207, 102, 121, 0.08),
+            rgba(207, 102, 121, 0.08) 10px,
+            rgba(207, 102, 121, 0.15) 10px,
+            rgba(207, 102, 121, 0.15) 20px) !important;
+}
+
+/* Table sizes */
+.tableXsmall .table {
+    font-size: 9px;
+}
+
+.tableXsmall .table th {
+    padding: 1px 4px;
+}
+
+.tableXsmall .table td {
+    padding: 0px 4px;
+}
+
+.tableMedium .table {
+    font-size: 11px;
+}
+
+.tableMedium .table th {
+    padding: 4px 8px;
+}
+
+.tableMedium .table td {
+    padding: 2px 8px;
+}
+
+.tableLarge .table {
+    font-size: 13px;
+}
+
+.tableLarge .table th {
+    padding: 8px 12px;
+}
+
+.tableLarge .table td {
+    padding: 6px 12px;
+}
+
+/* Popover */
+.popover {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--primary);
+    border-radius: 4px;
+    padding: 8px 12px;
+    z-index: 10000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
+    white-space: normal;
+    width: max-content;
+    max-width: 300px;
+    pointer-events: auto;
+    transform: translate(-50%, -100%);
+    margin-top: -12px;
+}
+
+.popoverContent {
+    color: var(--on-surface);
+    font-size: 12px;
+}
+
+.detailsCell {
+    opacity: 0.6;
+    position: relative;
+}

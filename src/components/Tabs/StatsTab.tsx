@@ -1,5 +1,6 @@
 import React from 'react';
 import { Target, TargetStats } from '../../types';
+import styles from './StatsTab.module.css';
 
 interface StatsTabProps {
     targets: Target[];
@@ -8,8 +9,8 @@ interface StatsTabProps {
 
 const StatsTab: React.FC<StatsTabProps> = ({ targets, targetStats }) => {
     return (
-        <div className="table-container">
-            <table>
+        <div className={styles.tableContainer}>
+            <table className={styles.table}>
                 <thead>
                     <tr>
                         <th>対象</th>
@@ -52,7 +53,7 @@ const StatsTab: React.FC<StatsTabProps> = ({ targets, targetStats }) => {
                     })}
                     {targets.length === 0 && (
                         <tr>
-                            <td colSpan={7} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                            <td colSpan={7} className={styles.emptyMessage}>
                                 対象が設定されていません
                             </td>
                         </tr>
