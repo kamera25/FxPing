@@ -11,6 +11,13 @@ use tcpip::hop::Hop;
 use tcpip::host::Host;
 use tracer::Tracer;
 
+// --- Security Policy ---
+// このアプリケーションは、Ping（ICMP）および Traceroute 以外の外部通信を行わない設計になっています。
+// フロントエンドは tauri.conf.json の CSP によって `connect-src 'none'` とされており、
+// バックエンドでも HTTP/HTTPS ライブラリ（reqwest 等）の導入は制限されています。
+// 新しい機能を追加する際は、不必要なネットワーク通信が発生しないよう十分注意してください。
+// ------------------------
+
 #[tauri::command]
 async fn ping_target(
     target: String,
