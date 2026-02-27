@@ -17,7 +17,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
     }, []);
 
     return (
-        <div className={styles.contentBody} style={{ padding: 0 }}>
+        <>
             <div className={styles.settingsSection}>
                 <h3>基本設定</h3>
                 <div className={styles.settingsGrid}>
@@ -53,7 +53,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="ICMPフラッディング（DOS攻撃と誤認されるリスク）を防止するための最小100ms制限"
                             />
-                            <span className={styles.unit}>ミリ秒</span>
+                            <span className={styles.unit}>ms</span>
                         </div>
                     </div>
                     <div className={styles.fieldGroup}>
@@ -70,7 +70,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="IPv4最大パケットサイズ(65535)からIPヘッダ(20)とICMPヘッダ(8)を差し引いた65,507バイトが最大実効ペイロードサイズ"
                             />
-                            <span className={styles.unit}>バイト</span>
+                            <span className={styles.unit}>bytes</span>
                         </div>
                     </div>
                     <div className={styles.fieldGroup}>
@@ -87,7 +87,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="バックエンド実装の制限（Timeoutオブジェクト：最大300,000ms）に準拠。0は無効。"
                             />
-                            <span className={styles.unit}>ミリ秒</span>
+                            <span className={styles.unit}>ms</span>
                         </div>
                     </div>
                     <div className={styles.fieldGroup}>
@@ -104,6 +104,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                                 }}
                                 title="IPヘッダにおけるTTLフィールドは8ビットのため、1〜255の範囲に限定"
                             />
+                            <span className={styles.unit}>hops</span>
                         </div>
                     </div>
                 </div>
@@ -132,9 +133,11 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                     <input type="checkbox" checked={settings.periodicExecution} onChange={e => setSettings({ ...settings, periodicExecution: e.target.checked })} />
                     定期的に実行する
                 </label>
-                <div className={styles.fieldRow} style={{ marginTop: '10px', marginLeft: '24px' }}>
-                    <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} />
-                    <span className={styles.unit}>秒待機</span>
+                <div className={styles.nestedFields} style={{ opacity: settings.periodicExecution ? 1 : 0.5 }}>
+                    <div className={styles.fieldRow}>
+                        <input type="number" disabled={!settings.periodicExecution} value={settings.periodicInterval} onChange={e => setSettings({ ...settings, periodicInterval: parseInt(e.target.value) || 0 })} className={styles.inputSmall} />
+                        <span className={styles.unit}>秒待機して再開</span>
+                    </div>
                 </div>
             </div>
 
@@ -157,7 +160,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                         </div>
                     </div>
                     <div className={styles.fieldGroup}>
-                        <div className={styles.fieldRow} style={{ marginTop: '22px' }}>
+                        <div className={styles.fieldRow} style={{ height: '100%', alignItems: 'flex-end', paddingBottom: '4px' }}>
                             <label className={styles.checkboxLabel}>
                                 <input
                                     type="checkbox"
@@ -170,8 +173,7 @@ const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) =>
                     </div>
                 </div>
             </div>
-
-        </div>
+        </>
     );
 };
 

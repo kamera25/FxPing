@@ -1,70 +1,185 @@
 .settingsContainer {
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+    background: var(--background);
     height: 100%;
+    color: var(--on-background);
 }
 
 .modalHeader {
-    padding: 12px 16px;
+    padding: 16px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: var(--surface);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .modalTitle {
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: 600;
     color: var(--primary);
     margin: 0;
 }
 
 .btnSmall {
-    padding: 4px 8px;
-    font-size: 11px;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
     color: var(--on-background);
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.btnSmall:hover {
-    background: rgba(255, 255, 255, 0.15);
+.btnSmall:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary);
+}
+
+.btnSmall:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .headerTabs {
     display: flex;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 4px 0 4px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .tab {
-    padding: 8px 16px;
+    padding: 12px 16px;
     font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.5);
     border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab:hover {
-    background: rgba(255, 255, 255, 0.03);
+    color: var(--on-background);
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .tab.active {
     color: var(--primary);
     border-bottom: 2px solid var(--primary);
-    background: rgba(187, 134, 252, 0.05);
 }
 
 .contentBody {
     padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
     flex: 1;
     overflow-y: auto;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+}
+
+/* Missing & Improved Styles */
+.settingsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.settingsSection:last-child {
+    border-bottom: none;
+}
+
+.settingsSection h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+}
+
+.settingsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fieldGroup label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.fieldRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+}
+
+.checkboxLabel:hover {
+    color: var(--primary);
+}
+
+.checkboxLabel input[type="checkbox"],
+.checkboxLabel input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.inputSmall {
+    width: 80px !important;
+    text-align: center;
+}
+
+.unit {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.pathInputGroup {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+}
+
+.pathInputGroup input {
+    flex: 1;
+    min-width: 0;
+}
+
+.nestedFields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-left: 26px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.radioGroup {
+    display: flex;
+    gap: 24px;
 }
