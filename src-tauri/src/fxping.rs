@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 
 mod pinger;
+mod resolve;
 mod tcpip;
 mod tracer;
 

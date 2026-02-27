@@ -36,22 +36,7 @@ impl Pinger {
         let ttl = Hop::new(ttl)?;
         let host = crate::tcpip::host::Host::new(&target)?;
         let target_str = host.to_string();
-
-        let ip: IpAddr = match target_str.parse() {
-            Ok(ip) => ip,
-            Err(_) => {
-                use std::net::ToSocketAddrs;
-                match format!("{}:0", target_str).to_socket_addrs() {
-                    Ok(mut addrs) => addrs
-                        .next()
-                        .map(|s| s.ip())
-                        .ok_or_else(|| format!("Could not resolve target: {}", target_str))?,
-                    Err(e) => {
-                        return Err(format!("DNS resolution failed for {}: {}", target_str, e))
-                    }
-                }
-            }
-        };
+        let ip = crate::resolve::resolve_host(&target_str)?;
 
         Ok(Self {
             target,

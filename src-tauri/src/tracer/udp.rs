@@ -152,7 +152,7 @@ impl TracerImpl for UDPTracer {
                         }
 
                         let fqdn = if resolve_hostnames {
-                            hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
+                            hop_ip.and_then(|addr| crate::resolve::resolve_addr(&addr))
                         } else {
                             None
                         };
@@ -208,7 +208,7 @@ fn parse_line_to_hop(line: &str, target_ip: &str, resolve_hostnames: bool) -> Op
             }
 
             let fqdn = if resolve_hostnames {
-                hop_ip.and_then(|addr| dns_lookup::lookup_addr(&addr).ok())
+                hop_ip.and_then(|addr| crate::resolve::resolve_addr(&addr))
             } else {
                 None
             };

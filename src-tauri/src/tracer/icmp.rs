@@ -56,7 +56,7 @@ impl TracerImpl for ICMPTracer {
                             surge_ping::IcmpPacket::V6(p) => p.get_real_dest().into(),
                         };
                         let fqdn = if self.resolve_hostnames {
-                            dns_lookup::lookup_addr(&hop_ip).ok()
+                            crate::resolve::resolve_addr(&hop_ip)
                         } else {
                             None
                         };
