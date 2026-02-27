@@ -1,14 +1,18 @@
+use crate::FxPingError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct Hop(u32);
 
 impl Hop {
-    pub fn new(val: u32) -> Result<Self, String> {
+    pub fn new(val: u32) -> Result<Self, FxPingError> {
         if (1..=255).contains(&val) {
             Ok(Hop(val))
         } else {
-            Err(format!("Hop value must be between 1 and 255. Got: {}", val))
+            Err(FxPingError::InvalidParameter(format!(
+                "Hop value must be between 1 and 255. Got: {}",
+                val
+            )))
         }
     }
 

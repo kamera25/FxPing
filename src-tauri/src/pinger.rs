@@ -1,6 +1,7 @@
 use crate::tcpip::hop::Hop;
 use crate::tcpip::payload_size::PayloadSize;
 use crate::tcpip::timeout::Timeout;
+use crate::FxPingError;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
@@ -30,7 +31,7 @@ impl Pinger {
         timeout_ms: u64,
         payload_size: usize,
         ttl: u32,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, FxPingError> {
         let payload_size = PayloadSize::new(payload_size)?;
         let timeout = Timeout::new(timeout_ms)?;
         let ttl = Hop::new(ttl)?;
@@ -47,7 +48,7 @@ impl Pinger {
         })
     }
 
-    pub async fn ping(&self, remarks: String) -> Result<PingResult, String> {
+    pub async fn ping(&self, remarks: String) -> Result<PingResult, FxPingError> {
         let config = match self.ip {
             IpAddr::V4(_) => Config::builder()
                 .kind(ICMP::V4)
@@ -58,7 +59,7 @@ impl Pinger {
                 .ttl(self.ttl.value())
                 .build(),
         };
-        let client = Client::new(&config).map_err(|e| e.to_string())?;
+        let client = Client::new(&config).map_err(|e| FxPingError::PingFailed(e.to_string()))?;
 
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
         pinger.timeout(self.timeout.value());

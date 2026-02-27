@@ -1,3 +1,4 @@
+use crate::FxPingError;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::str::FromStr;
@@ -6,10 +7,10 @@ use std::str::FromStr;
 pub struct Host(String);
 
 impl Host {
-    pub fn new(s: &str) -> Result<Self, String> {
+    pub fn new(s: &str) -> Result<Self, FxPingError> {
         let s = s.trim();
         if s.is_empty() {
-            return Err("Host cannot be empty".to_string());
+            return Err(FxPingError::HostInvalid("Host cannot be empty".to_string()));
         }
 
         // 1. Check if it's "localhost"
@@ -25,46 +26,61 @@ impl Host {
         // If it looks like an IP (only digits and dots) but did not parse as one,
         // then it's an invalid IP address.
         if s.chars().all(|c| c.is_ascii_digit() || c == '.') {
-            return Err(format!("Invalid IP address: {}", s));
+            return Err(FxPingError::HostInvalid(format!(
+                "Invalid IP address: {}",
+                s
+            )));
         }
 
         // 3. Check if it's an FQDN
         if s.contains('.') {
             let parts: Vec<&str> = s.split('.').collect();
             if parts.len() < 2 {
-                return Err(format!("Invalid FQDN: {}", s));
+                return Err(FxPingError::HostInvalid(format!("Invalid FQDN: {}", s)));
             }
 
             // Check top-level domain (last part) is not numeric
             if let Some(last_part) = parts.last() {
                 if last_part.chars().all(|c| c.is_ascii_digit()) {
-                    return Err(format!("Invalid FQDN (TLD cannot be numeric): {}", s));
+                    return Err(FxPingError::HostInvalid(format!(
+                        "Invalid FQDN (TLD cannot be numeric): {}",
+                        s
+                    )));
                 }
             }
 
             for part in parts {
                 if part.is_empty() {
-                    return Err(format!("Invalid FQDN (consecutive dots): {}", s));
+                    return Err(FxPingError::HostInvalid(format!(
+                        "Invalid FQDN (consecutive dots): {}",
+                        s
+                    )));
                 }
                 if part.starts_with('-') || part.ends_with('-') {
-                    return Err(format!("Invalid FQDN (hyphen at start/end): {}", s));
+                    return Err(FxPingError::HostInvalid(format!(
+                        "Invalid FQDN (hyphen at start/end): {}",
+                        s
+                    )));
                 }
                 if !part.chars().all(|c| c.is_alphanumeric() || c == '-') {
-                    return Err(format!("Invalid characters in FQDN: {}", s));
+                    return Err(FxPingError::HostInvalid(format!(
+                        "Invalid characters in FQDN: {}",
+                        s
+                    )));
                 }
             }
             return Ok(Host(s.to_string()));
         }
 
-        Err(format!(
+        Err(FxPingError::HostInvalid(format!(
             "Invalid target: {}. Must be IPv4, IPv6, FQDN, or localhost",
             s
-        ))
+        )))
     }
 }
 
 impl FromStr for Host {
-    type Err = String;
+    type Err = FxPingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::new(s)
     }

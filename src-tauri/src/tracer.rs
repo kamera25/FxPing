@@ -31,7 +31,10 @@ pub struct TraceResult {
     pub timestamp: String,
 }
 
-pub type TraceFuture<'a> = Pin<Box<dyn Future<Output = Result<Vec<TraceHop>, String>> + Send + 'a>>;
+use crate::FxPingError;
+
+pub type TraceFuture<'a> =
+    Pin<Box<dyn Future<Output = Result<Vec<TraceHop>, FxPingError>> + Send + 'a>>;
 
 pub trait TracerImpl: Send + Sync {
     fn trace(&self, app: tauri::AppHandle) -> TraceFuture<'_>;
@@ -53,7 +56,7 @@ impl Tracer {
         max_hops: Hop,
         protocol: String,
         resolve_hostnames: bool,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, FxPingError> {
         let payload_size = PayloadSize::new(payload_size)?;
         let timeout = Timeout::new(timeout_ms)?;
         let host = Host::new(&target)?;
@@ -81,7 +84,7 @@ impl Tracer {
         })
     }
 
-    pub async fn trace(&self, app: tauri::AppHandle) -> Result<TraceResult, String> {
+    pub async fn trace(&self, app: tauri::AppHandle) -> Result<TraceResult, FxPingError> {
         use tauri::Emitter;
 
         let timestamp = Local::now().format("%Y/%m/%d %H:%M:%S").to_string();
@@ -101,7 +104,7 @@ impl Tracer {
             IpAddr::V4(_) => Config::builder().kind(ICMP::V4).build(),
             IpAddr::V6(_) => Config::builder().kind(ICMP::V6).build(),
         };
-        let client = Client::new(&config).map_err(|e| e.to_string())?;
+        let client = Client::new(&config).map_err(|e| FxPingError::TraceFailed(e.to_string()))?;
         let mut pinger = client.pinger(self.ip, PingIdentifier(0)).await;
         pinger.timeout(self.timeout.value());
         let payload = vec![0u8; self.payload_size.value()];

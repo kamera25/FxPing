@@ -51,9 +51,9 @@ impl TracerImpl for UDPTracer {
                     .arg(&target_ip_str)
                     .stdout(Stdio::piped())
                     .spawn()
-                    .map_err(|e| format!("Failed to spawn traceroute command: {}", e))?;
+                    .map_err(|e| crate::FxPingError::TraceFailed(format!("Failed to spawn traceroute command: {}", e)))?;
 
-                let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+                let stdout = child.stdout.take().ok_or_else(|| crate::FxPingError::TraceFailed("Failed to capture stdout".to_string()))?;
                 let mut reader = BufReader::new(stdout).lines();
                 let mut hops = Vec::new();
 
@@ -86,11 +86,11 @@ impl TracerImpl for UDPTracer {
                     let icmp_protocol = if ip.is_ipv4() { Protocol::ICMPV4 } else { Protocol::ICMPV6 };
                     let recv_socket = match Socket::new(domain, Type::RAW, Some(icmp_protocol)) {
                         Ok(s) => s,
-                        Err(e) => return Err(format!("UDP traceroute on Windows requires Administrator privileges to create raw sockets. Error: {}", e)),
+                        Err(e) => return Err(crate::FxPingError::TraceFailed(format!("UDP traceroute on Windows requires Administrator privileges to create raw sockets. Error: {}", e))),
                     };
                     
                     if let Err(e) = recv_socket.set_read_timeout(Some(timeout)) {
-                        return Err(format!("Failed to set read timeout on RAW socket: {}", e));
+                        return Err(crate::FxPingError::TraceFailed(format!("Failed to set read timeout on RAW socket: {}", e)));
                     }
                     
                     let bind_addr = if ip.is_ipv4() {
@@ -99,12 +99,12 @@ impl TracerImpl for UDPTracer {
                         SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 0)
                     };
                     if let Err(e) = recv_socket.bind(&bind_addr.into()) {
-                        return Err(format!("Failed to bind RAW socket: {}", e));
+                        return Err(crate::FxPingError::TraceFailed(format!("Failed to bind RAW socket: {}", e)));
                     }
 
                     let send_socket = match Socket::new(domain, Type::DGRAM, Some(Protocol::UDP)) {
                         Ok(s) => s,
-                        Err(e) => return Err(format!("Failed to create UDP socket: {}", e)),
+                        Err(e) => return Err(crate::FxPingError::TraceFailed(format!("Failed to create UDP socket: {}", e))),
                     };
 
                     let payload = [0u8; 32];
@@ -113,11 +113,11 @@ impl TracerImpl for UDPTracer {
                     for ttl in 1..=max_hops {
                         if ip.is_ipv4() {
                             if let Err(e) = send_socket.set_ttl(ttl as u32) {
-                                return Err(format!("Failed to set TTL: {}", e));
+                                return Err(crate::FxPingError::TraceFailed(format!("Failed to set TTL: {}", e)));
                             }
                         } else {
                             if let Err(e) = send_socket.set_unicast_hops_v6(ttl as u32) {
-                                return Err(format!("Failed to set TTL for IPv6: {}", e));
+                                return Err(crate::FxPingError::TraceFailed(format!("Failed to set TTL for IPv6: {}", e)));
                             }
                         }
 
@@ -125,7 +125,7 @@ impl TracerImpl for UDPTracer {
                         
                         let current_target = SocketAddr::new(ip, 33434 + ttl as u16);
                         if let Err(e) = send_socket.send_to(&payload, &current_target.into()) {
-                            return Err(format!("Failed to send UDP packet: {}", e));
+                            return Err(crate::FxPingError::TraceFailed(format!("Failed to send UDP packet: {}", e)));
                         }
 
                         let mut hop_ip = None;
@@ -174,7 +174,7 @@ impl TracerImpl for UDPTracer {
                     }
 
                     Ok(hops)
-                }).await.unwrap_or_else(|e| Err(format!("Task execution failed: {}", e)))
+                }).await.unwrap_or_else(|e| Err(crate::FxPingError::Internal(format!("Task execution failed: {}", e))))
             }
         })
     }

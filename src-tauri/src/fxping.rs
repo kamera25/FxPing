@@ -2,11 +2,13 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
 
+mod error;
 mod pinger;
 mod resolve;
 mod tcpip;
 mod tracer;
 
+pub use error::FxPingError;
 use pinger::{PingResult, Pinger};
 use tcpip::hop::Hop;
 use tcpip::host::Host;
@@ -26,7 +28,7 @@ async fn ping_target(
     timeout_ms: u64,
     payload_size: usize,
     ttl: u32,
-) -> Result<PingResult, String> {
+) -> Result<PingResult, FxPingError> {
     let pinger = Pinger::new(target, timeout_ms, payload_size, ttl).await?;
     pinger.ping(remarks).await
 }
@@ -40,7 +42,7 @@ async fn traceroute_target(
     max_hops: u32,
     resolve_hostnames: bool,
     protocol: String,
-) -> Result<tracer::TraceResult, String> {
+) -> Result<tracer::TraceResult, FxPingError> {
     let hops = Hop::new(max_hops)?;
     let tracer = Tracer::new(
         target,
@@ -55,7 +57,7 @@ async fn traceroute_target(
 }
 
 #[tauri::command]
-fn validate_host(host: String) -> Result<(), String> {
+fn validate_host(host: String) -> Result<(), FxPingError> {
     Host::new(&host).map(|_| ())
 }
 
@@ -71,47 +73,41 @@ pub struct TargetData {
 }
 
 #[tauri::command]
-async fn save_targets(targets: Vec<TargetData>) -> Result<(), String> {
+async fn save_targets(targets: Vec<TargetData>) -> Result<(), FxPingError> {
     // 実行時パス (Executable path)
-    let exe_path = std::env::current_exe().map_err(|e| e.to_string())?;
+    let exe_path = std::env::current_exe()?;
     let dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
     let def_path = dir.join("ExPing.def");
 
-    let mut file = File::create(def_path).map_err(|e| e.to_string())?;
+    let mut file = File::create(def_path)?;
     for target in targets {
         if target.remarks.is_empty() {
-            writeln!(file, "{}", target.host).map_err(|e| e.to_string())?;
+            writeln!(file, "{}", target.host)?;
         } else {
-            writeln!(file, "{} #{}", target.host, target.remarks).map_err(|e| e.to_string())?;
+            writeln!(file, "{} #{}", target.host, target.remarks)?;
         }
     }
     Ok(())
 }
 
 #[tauri::command]
-async fn save_text_file(path: String, content: String) -> Result<(), String> {
-    let mut file = File::create(path).map_err(|e| e.to_string())?;
-    file.write_all(content.as_bytes())
-        .map_err(|e| e.to_string())?;
+async fn save_text_file(path: String, content: String) -> Result<(), FxPingError> {
+    let mut file = File::create(path)?;
+    file.write_all(content.as_bytes())?;
     Ok(())
 }
 
 #[tauri::command]
-async fn append_text_file(path: String, content: String) -> Result<(), String> {
+async fn append_text_file(path: String, content: String) -> Result<(), FxPingError> {
     use std::fs::OpenOptions;
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .map_err(|e| e.to_string())?;
-    file.write_all(content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+    file.write_all(content.as_bytes())?;
     Ok(())
 }
 
 #[tauri::command]
-fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
-    std::fs::read(&path).map_err(|e| e.to_string())
+fn read_file_bytes(path: String) -> Result<Vec<u8>, FxPingError> {
+    Ok(std::fs::read(&path)?)
 }
 
 #[tauri::command]

@@ -1,3 +1,4 @@
+use crate::FxPingError;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -5,14 +6,14 @@ use std::time::Duration;
 pub struct Timeout(Duration);
 
 impl Timeout {
-    pub fn new(ms: u64) -> Result<Self, String> {
+    pub fn new(ms: u64) -> Result<Self, FxPingError> {
         if ms <= 300_000 {
             Ok(Self(Duration::from_millis(ms)))
         } else {
-            Err(format!(
+            Err(FxPingError::InvalidParameter(format!(
                 "Timeout must be between 0 and 300,000ms (got {}ms)",
                 ms
-            ))
+            )))
         }
     }
 

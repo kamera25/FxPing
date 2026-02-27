@@ -45,7 +45,8 @@ impl TracerImpl for ICMPTracer {
                     IpAddr::V4(_) => builder.kind(ICMP::V4).build(),
                     IpAddr::V6(_) => builder.kind(ICMP::V6).build(),
                 };
-                let hop_client = Client::new(&hop_config).map_err(|e| e.to_string())?;
+                let hop_client = Client::new(&hop_config)
+                    .map_err(|e| crate::FxPingError::TraceFailed(e.to_string()))?;
                 let mut hop_pinger = hop_client.pinger(self.ip, PingIdentifier(ttl as u16)).await;
                 hop_pinger.timeout(self.timeout.value());
 

@@ -1,17 +1,18 @@
+use crate::FxPingError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub struct PayloadSize(u16);
 
 impl PayloadSize {
-    pub fn new(size: usize) -> Result<Self, String> {
+    pub fn new(size: usize) -> Result<Self, FxPingError> {
         if size <= 65535 {
             Ok(Self(size as u16))
         } else {
-            Err(format!(
+            Err(FxPingError::InvalidParameter(format!(
                 "Payload size must be between 0 and 65535 (got {})",
                 size
-            ))
+            )))
         }
     }
 

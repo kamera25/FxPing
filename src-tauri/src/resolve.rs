@@ -1,8 +1,9 @@
+use crate::FxPingError;
 use std::net::{IpAddr, ToSocketAddrs};
 
 /// Resolves a hostname or IP string to an IpAddr.
 /// Handles both literal IP addresses and hostnames.
-pub fn resolve_host(host: &str) -> Result<IpAddr, String> {
+pub fn resolve_host(host: &str) -> Result<IpAddr, FxPingError> {
     // Attempt to parse as an IP address first
     if let Ok(ip) = host.parse::<IpAddr>() {
         return Ok(ip);
@@ -13,8 +14,14 @@ pub fn resolve_host(host: &str) -> Result<IpAddr, String> {
         Ok(mut addrs) => addrs
             .next()
             .map(|s| s.ip())
-            .ok_or_else(|| format!("Could not resolve target: {}", host)),
-        Err(e) => Err(format!("DNS resolution failed for {}: {}", host, e)),
+            .ok_or_else(|| FxPingError::DnsResolution {
+                target: host.to_string(),
+                source: std::io::Error::new(std::io::ErrorKind::NotFound, "No address found"),
+            }),
+        Err(e) => Err(FxPingError::DnsResolution {
+            target: host.to_string(),
+            source: e,
+        }),
     }
 }
 
