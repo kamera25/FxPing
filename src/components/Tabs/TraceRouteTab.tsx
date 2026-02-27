@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { TraceResult } from '../../types';
+import { TraceResult, TableSize } from '../../types';
 
 interface TraceRouteTabProps {
     runTraceRoute: () => Promise<void>;
@@ -8,9 +8,9 @@ interface TraceRouteTabProps {
     onProtocolChange: (proto: 'ICMP' | 'UDP') => Promise<void>;
     traceResults: TraceResult[];
     setTraceResults: (results: TraceResult[]) => void;
+    tableSize: TableSize;
+    setTableSize: (size: TableSize) => void;
 }
-
-type TableSize = 'xsmall' | 'small' | 'medium' | 'large';
 
 const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
     runTraceRoute,
@@ -18,12 +18,13 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
     traceProtocol,
     onProtocolChange,
     traceResults,
-    setTraceResults
+    setTraceResults,
+    tableSize,
+    setTableSize
 }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(false);
-    const [tableSize, setTableSize] = useState<TableSize>('medium');
 
     const checkScroll = useCallback(() => {
         const container = scrollContainerRef.current;

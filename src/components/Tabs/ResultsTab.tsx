@@ -1,9 +1,7 @@
 import React, { RefObject, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { PingResult } from '../../types';
-
-type TableSize = 'xsmall' | 'small' | 'medium' | 'large';
+import { PingResult, TableSize } from '../../types';
 
 interface ResultsTabProps {
     isPinging: boolean;
@@ -13,6 +11,8 @@ interface ResultsTabProps {
     setTargetStats: (stats: any) => void;
     scrollRef: RefObject<HTMLDivElement | null>;
     handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
+    tableSize: TableSize;
+    setTableSize: (size: TableSize) => void;
 }
 
 const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: TableSize }) => {
@@ -88,9 +88,10 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
     setResults,
     setTargetStats,
     scrollRef,
-    handleScroll
+    handleScroll,
+    tableSize,
+    setTableSize
 }) => {
-    const [tableSize, setTableSize] = useState<TableSize>('medium');
 
     return (
         <>

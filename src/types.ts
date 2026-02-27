@@ -85,3 +85,5 @@ export interface Settings {
         extension: string;
     };
 }
+
+export type TableSize = 'xsmall' | 'small' | 'medium' | 'large';

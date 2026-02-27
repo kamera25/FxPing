@@ -5,7 +5,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 // Types
-import { PingResult, Target, TraceResult, TraceHop, TargetStats, Settings } from "./types";
+import { PingResult, Target, TraceResult, TraceHop, TargetStats, Settings, TableSize } from "./types";
 
 // Components
 import Header from "./components/Header";
@@ -88,6 +88,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [nextPingTimeMs, setNextPingTimeMs] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [tableSize, setTableSize] = useState<TableSize>('medium');
   const [showExPingInput, setShowExPingInput] = useState(false);
   const [exPingText, setExPingText] = useState("");
   const [isInputError, setIsInputError] = useState(false);
@@ -809,6 +810,8 @@ function App() {
             setTargetStats={setTargetStats}
             scrollRef={scrollRef}
             handleScroll={handleScroll}
+            tableSize={tableSize}
+            setTableSize={setTableSize}
           />
         )}
 
@@ -824,6 +827,8 @@ function App() {
             onProtocolChange={handleProtocolChange}
             traceResults={traceResults}
             setTraceResults={setTraceResults}
+            tableSize={tableSize}
+            setTableSize={setTableSize}
           />
         )}
       </div>
