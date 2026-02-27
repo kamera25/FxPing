@@ -1,10 +1,11 @@
+import { useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useStore } from "../store/useStore";
 
 export const useSettings = () => {
     const { setSettings, setPlatform } = useStore();
 
-    const selectFile = async (type: 'sound' | 'program') => {
+    const selectFile = useCallback(async (type: 'sound' | 'program') => {
         const { open } = await import("@tauri-apps/plugin-dialog");
         try {
             const selected = await open({
@@ -24,9 +25,9 @@ export const useSettings = () => {
         } catch (e) {
             console.error("File selection error", e);
         }
-    };
+    }, [setSettings]);
 
-    const selectDir = async (target: 'ng' | 'logs' = 'ng') => {
+    const selectDir = useCallback(async (target: 'ng' | 'logs' = 'ng') => {
         const { open } = await import("@tauri-apps/plugin-dialog");
         try {
             const selected = await open({
@@ -43,9 +44,9 @@ export const useSettings = () => {
         } catch (e) {
             console.error("Directory selection error", e);
         }
-    };
+    }, [setSettings]);
 
-    const playSound = async (filePath: string) => {
+    const playSound = useCallback(async (filePath: string) => {
         if (!filePath) return;
         try {
             const bytes = await invoke<number[]>("read_file_bytes", { path: filePath });
@@ -62,12 +63,12 @@ export const useSettings = () => {
         } catch (e) {
             console.error("Audio error", e);
         }
-    };
+    }, []);
 
-    const initPlatform = async () => {
+    const initPlatform = useCallback(async () => {
         const p = await invoke<string>("get_platform");
         setPlatform(p);
-    };
+    }, [setPlatform]);
 
     return {
         selectFile,

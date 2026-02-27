@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useStore } from "../store/useStore";
 import { PingResult } from "../types";
 import { checkNgConditions } from "../utils/logic";
@@ -11,7 +12,7 @@ export const useNgDetection = () => {
     } = useStore();
     const { playSound } = useSettings();
 
-    const handleNgDetection = (newResults: PingResult[]) => {
+    const handleNgDetection = useCallback((newResults: PingResult[]) => {
         setTargetNgStats(prev => {
             const { nextStats, alertToTrigger } = checkNgConditions(prev, newResults, settings);
 
@@ -23,7 +24,7 @@ export const useNgDetection = () => {
             }
             return nextStats;
         });
-    };
+    }, [settings, setTargetNgStats, setActiveAlert, playSound]);
 
     return {
         handleNgDetection
