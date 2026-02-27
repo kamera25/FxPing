@@ -20,6 +20,16 @@ import ResultsTab from "./components/Tabs/ResultsTab";
 import StatsTab from "./components/Tabs/StatsTab";
 import TraceRouteTab from "./components/Tabs/TraceRouteTab";
 
+// Utils
+import {
+  parseExPingText,
+  updateTargetStats,
+  checkNgConditions,
+  formatPingResultsCsvRows,
+  formatStatsCsvRows,
+  formatTraceResultsText
+} from "./utils/logic";
+
 function App() {
   const [activeTab, setActiveTab] = useState("results");
   const [targets, setTargets] = useState<Target[]>([
@@ -255,30 +265,16 @@ function App() {
   };
 
   const parseExPingContent = async (text: string) => {
-    const lines = text.split('\n');
+    const items = parseExPingText(text);
     const newTargets: Target[] = [];
     const invalidHosts: string[] = [];
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("‘") || trimmed.startsWith("'")) continue;
-
-      let host = trimmed;
-      let remarks = "";
-
-      if (trimmed.includes(" ")) {
-        const firstSpace = trimmed.indexOf(" ");
-        host = trimmed.slice(0, firstSpace).trim();
-        remarks = trimmed.slice(firstSpace + 1).trim();
-      }
-
-      if (host) {
-        try {
-          await invoke("validate_host", { host });
-          newTargets.push({ host, remarks });
-        } catch (e) {
-          invalidHosts.push(`${host} (${e})`);
-        }
+    for (const item of items) {
+      try {
+        await invoke("validate_host", { host: item.host });
+        newTargets.push(item);
+      } catch (e) {
+        invalidHosts.push(`${item.host} (${e})`);
       }
     }
     return { newTargets, invalidHosts };
@@ -452,77 +448,13 @@ function App() {
             return combined.slice(-1000);
           });
 
-          setTargetStats(prev => {
-            const next = { ...prev };
-            newResults.forEach(res => {
-              const stats = next[res.target] || {
-                target: res.target,
-                executedCount: 0,
-                failedCount: 0,
-                minTime: null,
-                maxTime: null,
-                avgTime: null,
-                totalTime: 0,
-                successCount: 0,
-                isLastFailed: false,
-              };
-
-              stats.executedCount++;
-              if (res.time_ms !== null) {
-                stats.successCount++;
-                stats.totalTime += res.time_ms;
-                stats.minTime = stats.minTime === null ? res.time_ms : Math.min(stats.minTime, res.time_ms);
-                stats.maxTime = stats.maxTime === null ? res.time_ms : Math.max(stats.maxTime, res.time_ms);
-                stats.avgTime = stats.totalTime / stats.successCount;
-                stats.isLastFailed = false;
-              } else {
-                stats.failedCount++;
-                stats.isLastFailed = true;
-              }
-              next[res.target] = stats;
-            });
-            return next;
-          });
+          setTargetStats(prev => updateTargetStats(prev, newResults));
 
           setTargetNgStats(prev => {
-            const nextStats = { ...prev };
-            let alertToSet: { target: string, timestamp: string, reason: string } | null = null;
+            const { nextStats, alertToTrigger } = checkNgConditions(prev, newResults, settings);
 
-            newResults.forEach(res => {
-              const isNg = res.time_ms === null;
-              const current = nextStats[res.target] || { consecutiveCount: 0, alerted: false };
-              const nextConsecutive = isNg ? current.consecutiveCount + 1 : 0;
-              let nextAlerted = isNg ? current.alerted : false;
-
-              if (isNg && settings.ng.showPopup) {
-                const threshold = settings.ng.notUntilCountReached ? settings.ng.countToNotify : 1;
-                let shouldTrigger = false;
-
-                if (nextConsecutive === threshold) {
-                  shouldTrigger = true;
-                }
-
-                if (settings.ng.onceOnly && nextAlerted) {
-                  shouldTrigger = false;
-                }
-
-                if (shouldTrigger) {
-                  alertToSet = {
-                    target: res.target,
-                    timestamp: res.timestamp,
-                    reason: res.status
-                  };
-                  nextAlerted = true;
-                }
-              } else if (!isNg) {
-                nextAlerted = false;
-              }
-
-              nextStats[res.target] = { consecutiveCount: nextConsecutive, alerted: nextAlerted };
-            });
-
-            if (alertToSet) {
-              setActiveAlert(current => current || alertToSet);
+            if (alertToTrigger) {
+              setActiveAlert(current => current || alertToTrigger);
               if (settings.ng.playSound && settings.ng.soundFile) {
                 playSound(settings.ng.soundFile);
               }
@@ -619,10 +551,8 @@ function App() {
         });
         if (path) {
           const header = "ステータス,日時,対象,IPアドレス,応答時間(ms),詳細,備考\n";
-          const content = results.map(r =>
-            `${r.status.startsWith("OK") ? "OK" : "NG"},${r.timestamp},${r.target},${r.ip},${r.time_ms !== null ? r.time_ms.toFixed(2) : "-"},${r.status},${r.remarks}`
-          ).join('\n');
-          await invoke("save_text_file", { path, content: header + content });
+          const content = header + formatPingResultsCsvRows(results);
+          await invoke("save_text_file", { path, content });
           alert("保存しました。");
         }
       } catch (e) {
@@ -644,13 +574,8 @@ function App() {
         });
         if (path) {
           const header = "対象,実施回数,失敗回数,失敗率(%),最短時間(ms),最大時間(ms),平均時間(ms)\n";
-          const content = targets.map(t => {
-            const s = targetStats[t.host];
-            if (!s) return `${t.host},0,0,0,-,-,-`;
-            const failRate = ((s.failedCount / s.executedCount) * 100).toFixed(1);
-            return `${s.target},${s.executedCount},${s.failedCount},${failRate},${s.minTime?.toFixed(2) || "-"},${s.maxTime?.toFixed(2) || "-"},${s.avgTime?.toFixed(2) || "-"}`;
-          }).join('\n');
-          await invoke("save_text_file", { path, content: header + content });
+          const content = header + formatStatsCsvRows(targets, targetStats);
+          await invoke("save_text_file", { path, content });
           alert("保存しました。");
         }
       } catch (e) {
@@ -671,15 +596,7 @@ function App() {
           defaultPath: 'TraceRouteResults.txt'
         });
         if (path) {
-          let content = "";
-          traceResults.forEach(res => {
-            content += `Target: ${res.target} (${res.timestamp})\n`;
-            content += `Ping: ${res.ping_ok ? "OK" : "NG"}\n`;
-            res.hops.forEach(h => {
-              content += `${h.ttl}\t${h.ip || "*"}\t${h.time_ms !== null ? h.time_ms.toFixed(2) + "ms" : "*"}\n`;
-            });
-            content += "----------------------------------------\n";
-          });
+          const content = formatTraceResultsText(traceResults);
           await invoke("save_text_file", { path, content });
           alert("保存しました。");
         }
@@ -732,14 +649,10 @@ function App() {
       const resultsToSave = results.slice(lastSavedIndexRef.current);
       if (resultsToSave.length === 0 && path === lastSavedPathRef.current) return;
 
-      const formatResults = (rows: PingResult[]) => rows.map(r =>
-        `${r.status.startsWith("OK") ? "OK" : "NG"},${r.timestamp},${r.target},${r.ip},${r.time_ms !== null ? r.time_ms.toFixed(2) : "-"},${r.status},${r.remarks}`
-      ).join('\n');
-
       if (path !== lastSavedPathRef.current) {
         // New file or session: Overwrite
         const header = "ステータス,日時,対象,IPアドレス,応答時間(ms),詳細,備考\n";
-        const content = header + formatResults(results);
+        const content = header + formatPingResultsCsvRows(results);
         invoke("save_text_file", { path, content }).then(() => {
           lastSavedIndexRef.current = results.length;
           lastSavedPathRef.current = path;
@@ -748,7 +661,7 @@ function App() {
         });
       } else if (resultsToSave.length > 0) {
         // Same file: Append
-        const content = formatResults(resultsToSave) + "\n";
+        const content = formatPingResultsCsvRows(resultsToSave) + "\n";
         invoke("append_text_file", { path, content }).then(() => {
           lastSavedIndexRef.current = results.length;
         }).catch(e => {
