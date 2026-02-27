@@ -28,18 +28,23 @@ const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: 
         ? (isFailed ? "NG" : "OK")
         : res.status;
 
-    const handleRowClick = (e: React.MouseEvent) => {
+    const handleMouseEnter = (e: React.MouseEvent) => {
         if (isFailed && tableSize === 'xsmall') {
             setPopoverPos({ x: e.clientX, y: e.clientY });
-            setShowPopover(!showPopover);
+            setShowPopover(true);
         }
+    };
+
+    const handleMouseLeave = () => {
+        setShowPopover(false);
     };
 
     return (
         <tr
-            className={`${isFailed ? "row-failed" : ""} ${isFailed && tableSize === 'xsmall' ? "row-clickable" : ""}`}
-            onClick={handleRowClick}
-            style={{ cursor: (isFailed && tableSize === 'xsmall') ? 'pointer' : 'default' }}
+            className={`${isFailed ? "row-failed" : ""} ${isFailed && tableSize === 'xsmall' ? "row-hoverable" : ""}`}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{ cursor: (isFailed && tableSize === 'xsmall') ? 'help' : 'default' }}
         >
             <td className={!isFailed ? "status-ok" : "status-ng"}>
                 {!isFailed ? "● OK" : "✖ NG"}
