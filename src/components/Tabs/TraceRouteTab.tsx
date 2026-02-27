@@ -10,6 +10,8 @@ interface TraceRouteTabProps {
     setTraceResults: (results: TraceResult[]) => void;
 }
 
+type TableSize = 'xsmall' | 'small' | 'medium' | 'large';
+
 const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
     runTraceRoute,
     isTracing,
@@ -21,6 +23,7 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(false);
+    const [tableSize, setTableSize] = useState<TableSize>('medium');
 
     const checkScroll = useCallback(() => {
         const container = scrollContainerRef.current;
@@ -90,6 +93,27 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                 </div>
 
                 <button onClick={() => setTraceResults([])}>履歴クリア</button>
+
+                <div className="size-selector">
+                    <button
+                        className={`size-btn ${tableSize === 'xsmall' ? 'active' : ''}`}
+                        onClick={() => setTableSize('xsmall')}
+                    >
+                        小
+                    </button>
+                    <button
+                        className={`size-btn ${tableSize === 'medium' ? 'active' : ''}`}
+                        onClick={() => setTableSize('medium')}
+                    >
+                        中
+                    </button>
+                    <button
+                        className={`size-btn ${tableSize === 'large' ? 'active' : ''}`}
+                        onClick={() => setTableSize('large')}
+                    >
+                        大
+                    </button>
+                </div>
             </div>
 
             <div style={{ position: 'relative', flex: 1, overflow: 'hidden', display: 'flex' }}>
@@ -115,18 +139,24 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
 
                 <div
                     ref={scrollContainerRef}
-                    className="table-container"
+                    className={`table-container table-${tableSize}`}
                     style={{ overflowX: 'auto', maxWidth: '100%' }}
                 >
                     <table style={{ minWidth: 'max-content', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr>
-                                <th style={{ width: '150px', position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 2 }}>対象ホスト</th>
-                                <th style={{ width: '80px' }}>Ping</th>
+                                <th style={{
+                                    width: tableSize === 'xsmall' ? '100px' : '150px',
+                                    position: 'sticky',
+                                    left: 0,
+                                    background: 'var(--bg-secondary)',
+                                    zIndex: 2
+                                }}>対象ホスト</th>
+                                <th style={{ width: tableSize === 'xsmall' ? '40px' : '80px' }}>Ping</th>
                                 {(() => {
                                     const maxHopsFound = Math.max(0, ...traceResults.map(r => r.hops.length));
                                     return Array.from({ length: Math.max(1, maxHopsFound) }).map((_, i) => (
-                                        <th key={i} style={{ width: '150px' }}>Hop {i + 1}</th>
+                                        <th key={i} style={{ width: tableSize === 'xsmall' ? '100px' : '150px' }}>Hop {i + 1}</th>
                                     ));
                                 })()}
                             </tr>
@@ -139,18 +169,18 @@ const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
                                         <td style={{ position: 'sticky', left: 0, background: 'var(--bg-secondary)', zIndex: 1 }}>{res.target}</td>
                                         <td
                                             className={res.ping_ok === null ? "status-pending" : (res.ping_ok ? "status-ok" : "status-ng")}
-                                            style={{ left: '150px' }}
+                                            style={{ left: tableSize === 'xsmall' ? '100px' : '150px' }}
                                         >
-                                            {res.ping_ok === null ? "実行中" : (res.ping_ok ? "OK" : "NG")}
+                                            {res.ping_ok === null ? "実行中" : (res.ping_ok ? (tableSize === 'xsmall' ? "OK" : "OK") : (tableSize === 'xsmall' ? "NG" : "NG"))}
                                         </td>
                                         {Array.from({ length: Math.max(1, maxHopsFound) }).map((_, j) => {
                                             const hop = res.hops[j];
                                             return (
-                                                <td key={j} style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                                                <td key={j} style={{ fontSize: tableSize === 'xsmall' ? '9px' : '11px', whiteSpace: 'nowrap' }}>
                                                     {hop ? (
                                                         <>
                                                             <div style={{ fontWeight: 'bold', color: hop.ip === "*" ? "#ff4d4d" : "inherit" }}>{hop.ip}</div>
-                                                            {hop.fqdn && <div style={{ opacity: 0.8, color: 'var(--primary)', fontStyle: 'italic' }}>{hop.fqdn}</div>}
+                                                            {hop.fqdn && tableSize !== 'xsmall' && <div style={{ opacity: 0.8, color: 'var(--primary)', fontStyle: 'italic' }}>{hop.fqdn}</div>}
                                                             <div style={{ opacity: 0.6 }}>{hop.time_ms !== null ? `${hop.time_ms.toFixed(1)}ms` : "-"}</div>
                                                         </>
                                                     ) : "-"}
