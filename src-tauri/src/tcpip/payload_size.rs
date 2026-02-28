@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct PayloadSize(u16);
 
 impl PayloadSize {
+    #[allow(dead_code)]
     pub fn new(size: usize) -> Result<Self, FxPingError> {
         if size <= 65535 {
             Ok(Self(size as u16))

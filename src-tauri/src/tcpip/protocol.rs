@@ -25,6 +25,7 @@ impl Protocol {
         matches!(self.0, ProtocolInner::ICMP)
     }
 
+    #[allow(dead_code)]
     pub fn is_udp(&self) -> bool {
         matches!(self.0, ProtocolInner::UDP)
     }

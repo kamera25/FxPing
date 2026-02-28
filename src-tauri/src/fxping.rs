@@ -4,6 +4,7 @@ use std::io::Write;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 mod error;
+mod ini_settings;
 mod pinger;
 mod resolve;
 mod tcpip;
@@ -153,6 +154,16 @@ fn show_main_window(window: tauri::Window) {
 }
 
 #[tauri::command]
+async fn load_settings_from_ini() -> Result<Option<ini_settings::Settings>, FxPingError> {
+    ini_settings::load_from_ini()
+}
+
+#[tauri::command]
+async fn save_settings_to_ini(settings: ini_settings::Settings) -> Result<(), FxPingError> {
+    ini_settings::save_to_ini(settings)
+}
+
+#[tauri::command]
 fn is_admin() -> bool {
     #[cfg(windows)]
     {
@@ -264,7 +275,9 @@ pub fn run() {
             is_admin,
             show_main_window,
             launch_external_program,
-            load_def_targets
+            load_def_targets,
+            load_settings_from_ini,
+            save_settings_to_ini
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

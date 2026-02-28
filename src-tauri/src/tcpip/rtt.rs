@@ -9,6 +9,7 @@ impl Rtt {
         Self(ms)
     }
 
+    #[allow(dead_code)]
     pub fn value(&self) -> f64 {
         self.0
     }

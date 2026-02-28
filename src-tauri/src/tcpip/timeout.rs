@@ -1,5 +1,5 @@
 use crate::FxPingError;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::time::Duration;
 
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
