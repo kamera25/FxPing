@@ -174,22 +174,9 @@ fn play_sound_native(path: String) -> bool {
         });
         return true;
     }
-    #[cfg(target_os = "windows")]
+    #[cfg(not(target_os = "macos"))]
     {
-        tauri::async_runtime::spawn(async move {
-            let _ = tokio::process::Command::new("powershell")
-                .arg("-c")
-                .arg(format!(
-                    "(New-Object Media.SoundPlayer '{}').PlaySync()",
-                    path
-                ))
-                .status()
-                .await;
-        });
-        return true;
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
+        let _ = path;
         return false;
     }
 }
