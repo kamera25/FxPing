@@ -57,13 +57,14 @@ function App() {
     isInputError
   } = useStore();
 
-  const { selectFile, selectDir, playSound, initPlatform } = useSettings();
+  const { selectFile, selectDir, playSound, initPlatform, loadSettingsFromIni } = useSettings();
   const { addTarget, removeTarget, handleExPingApply, handleTargetListDrop, handleDrop, loadDefTargets } = useTargets();
   const { runTraceRoute, handleProtocolChange } = usePingEngine();
   useAutoSave();
 
   useEffect(() => {
     loadDefTargets();
+    loadSettingsFromIni();
   }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);

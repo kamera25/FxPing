@@ -70,10 +70,39 @@ export const useSettings = () => {
         setPlatform(p);
     }, [setPlatform]);
 
+    const loadSettingsFromIni = useCallback(async () => {
+        try {
+            const iniSettings = await invoke<Record<string, unknown> | null>("load_settings_from_ini");
+            if (iniSettings) {
+                setSettings((prev) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const merged: any = { ...prev };
+                    for (const key of Object.keys(iniSettings)) {
+                        if (key === 'ng' || key === 'ok' || key === 'logs') {
+                            const section = iniSettings[key] as Record<string, unknown>;
+                            if (section && typeof section === 'object') {
+                                merged[key] = {
+                                    ...merged[key],
+                                    ...section
+                                };
+                            }
+                        } else {
+                            merged[key] = iniSettings[key];
+                        }
+                    }
+                    return merged;
+                });
+            }
+        } catch (e) {
+            console.error("Failed to load settings from INI:", e);
+        }
+    }, [setSettings]);
+
     return {
         selectFile,
         selectDir,
         playSound,
-        initPlatform
+        initPlatform,
+        loadSettingsFromIni
     };
 };

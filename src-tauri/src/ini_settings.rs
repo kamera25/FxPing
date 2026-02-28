@@ -75,10 +75,27 @@ pub struct LogSettings {
     pub extension: String,
 }
 
-pub fn load_from_ini() -> Result<Option<Settings>, FxPingError> {
+pub fn get_ini_path() -> Result<std::path::PathBuf, FxPingError> {
     let exe_path = std::env::current_exe().map_err(FxPingError::FileIo)?;
-    let dir = exe_path.parent().unwrap_or(Path::new("."));
-    let ini_path = dir.join("ExPing.ini");
+    let mut dir = exe_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+
+    if cfg!(target_os = "macos") {
+        if let Some(contents_dir) = dir.parent() {
+            if let Some(app_bundle_dir) = contents_dir.parent() {
+                if app_bundle_dir.extension().and_then(|s| s.to_str()) == Some("app") {
+                    if let Some(app_parent_dir) = app_bundle_dir.parent() {
+                        dir = app_parent_dir.to_path_buf();
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(dir.join("ExPing.ini"))
+}
+
+pub fn load_from_ini() -> Result<Option<Settings>, FxPingError> {
+    let ini_path = get_ini_path()?;
 
     if !ini_path.exists() {
         return Ok(None);
@@ -103,6 +120,8 @@ pub fn load_from_ini() -> Result<Option<Settings>, FxPingError> {
 
     // Mapping
     settings.flash_tray_icon = get_i32("BlinkTrayIcon", 1) != 0;
+    settings.hide_on_minimize = get_i32("HideOnTaskBar", 0) != 0;
+    settings.save_settings_on_exit = get_i32("SaveConfig", 0) != 0;
     settings.save_as_csv = get_i32("SaveAsCsv", 1) != 0;
     settings.auto_delete_results = get_i32("AutoDelete", 1) != 0;
     settings.max_results = get_i32("AutoDeleteCount", 1000);
@@ -117,7 +136,13 @@ pub fn load_from_ini() -> Result<Option<Settings>, FxPingError> {
     settings.ng.program_options = section.get("NGCommandOption").unwrap_or("").to_string();
     settings.ng.program_working_dir = section.get("NGCommandWorkDir").unwrap_or("").to_string();
     settings.ng.change_tray_icon = get_i32("NGChangeIcon", 1) != 0;
+    settings.ng.execute_on_delay = get_i32("CheckRTT", 0) != 0;
+    settings.ng.delay_ms = get_i32("CheckRTTValue", 500);
+    settings.ng.not_if_previous_ng = get_i32("NGCheckBefore", 1) != 0;
+    settings.ng.not_until_count_reached = get_i32("UseNGPassCount", 0) != 0;
     settings.ng.count_to_notify = get_i32("NGPassCount", 1);
+    settings.ng.count_consecutive_only = get_i32("ContinuationNGCount", 0) != 0;
+    settings.ng.notify_on_interval_only = get_i32("ResetNGFlag", 0) != 0;
 
     // OK
     settings.ok.show_popup = get_i32("OKPopup", 0) != 0;
@@ -127,8 +152,11 @@ pub fn load_from_ini() -> Result<Option<Settings>, FxPingError> {
     settings.ok.program_path = section.get("OKCommand").unwrap_or("").to_string();
     settings.ok.program_options = section.get("OKCommandOption").unwrap_or("").to_string();
     settings.ok.program_working_dir = section.get("OKCommandWorkDir").unwrap_or("").to_string();
+    settings.ok.not_if_previous_ok = get_i32("OKCheckBefore", 1) != 0;
+    settings.ok.notify_on_interval_only = get_i32("ResetOKFlag", 0) != 0;
 
     // Logs
+    settings.logs.auto_save = get_i32("LogTrace", 0) != 0;
     settings.logs.save_path = section.get("LogDirectory").unwrap_or("").to_string();
     settings.logs.fixed_name = section
         .get("FixedLogFileName")
@@ -147,9 +175,7 @@ pub fn load_from_ini() -> Result<Option<Settings>, FxPingError> {
 }
 
 pub fn save_to_ini(settings: Settings) -> Result<(), FxPingError> {
-    let exe_path = std::env::current_exe().map_err(FxPingError::FileIo)?;
-    let dir = exe_path.parent().unwrap_or(Path::new("."));
-    let ini_path = dir.join("ExPing.ini");
+    let ini_path = get_ini_path()?;
 
     let old_conf =
         if ini_path.exists() {
@@ -215,6 +241,76 @@ pub fn save_to_ini(settings: Settings) -> Result<(), FxPingError> {
         .set("OKCommand", settings.ok.program_path)
         .set("OKCommandOption", settings.ok.program_options)
         .set("OKCommandWorkDir", settings.ok.program_working_dir)
+        .set(
+            "HideOnTaskBar",
+            if settings.hide_on_minimize { "1" } else { "0" },
+        )
+        .set(
+            "SaveConfig",
+            if settings.save_settings_on_exit {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set(
+            "CheckRTT",
+            if settings.ng.execute_on_delay {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set("CheckRTTValue", settings.ng.delay_ms.to_string())
+        .set(
+            "NGCheckBefore",
+            if settings.ng.not_if_previous_ng {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set(
+            "UseNGPassCount",
+            if settings.ng.not_until_count_reached {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set(
+            "ContinuationNGCount",
+            if settings.ng.count_consecutive_only {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set(
+            "ResetNGFlag",
+            if settings.ng.notify_on_interval_only {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set(
+            "OKCheckBefore",
+            if settings.ok.not_if_previous_ok {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set(
+            "ResetOKFlag",
+            if settings.ok.notify_on_interval_only {
+                "1"
+            } else {
+                "0"
+            },
+        )
+        .set("LogTrace", if settings.logs.auto_save { "1" } else { "0" })
         .set("LogDirectory", settings.logs.save_path)
         .set("FixedLogFileName", settings.logs.fixed_name)
         .set("LogFileNameHead", settings.logs.prefix)
@@ -255,8 +351,7 @@ mod tests {
 
     #[test]
     fn test_ini_mapping() {
-        let ini_content =
-            "[ExPing]\nBlinkTrayIcon=0\nSaveAsCsv=1\nNGPopup=0\nLogFileNameHead=TEST\n";
+        let ini_content = "[ExPing]\nBlinkTrayIcon=0\nSaveAsCsv=1\nNGPopup=0\nLogFileNameHead=TEST\nHideOnTaskBar=1\nSaveConfig=1\nLogTrace=1\nCheckRTT=1\nCheckRTTValue=300\nNGCheckBefore=0\nOKCheckBefore=0\nResetNGFlag=1\nResetOKFlag=1\nUseNGPassCount=1\nContinuationNGCount=1\n";
         let conf = Ini::load_from_str(ini_content).unwrap();
         let section = conf.section(Some("ExPing")).unwrap();
 
@@ -272,11 +367,33 @@ mod tests {
         settings.save_as_csv = get_i32("SaveAsCsv", 1) != 0;
         settings.ng.show_popup = get_i32("NGPopup", 1) != 0;
         settings.logs.prefix = section.get("LogFileNameHead").unwrap_or("EP").to_string();
+        settings.hide_on_minimize = get_i32("HideOnTaskBar", 0) != 0;
+        settings.save_settings_on_exit = get_i32("SaveConfig", 0) != 0;
+        settings.logs.auto_save = get_i32("LogTrace", 0) != 0;
+        settings.ng.execute_on_delay = get_i32("CheckRTT", 0) != 0;
+        settings.ng.delay_ms = get_i32("CheckRTTValue", 500);
+        settings.ng.not_if_previous_ng = get_i32("NGCheckBefore", 1) != 0;
+        settings.ok.not_if_previous_ok = get_i32("OKCheckBefore", 1) != 0;
+        settings.ng.notify_on_interval_only = get_i32("ResetNGFlag", 0) != 0;
+        settings.ok.notify_on_interval_only = get_i32("ResetOKFlag", 0) != 0;
+        settings.ng.not_until_count_reached = get_i32("UseNGPassCount", 0) != 0;
+        settings.ng.count_consecutive_only = get_i32("ContinuationNGCount", 0) != 0;
 
         assert_eq!(settings.flash_tray_icon, false);
         assert_eq!(settings.save_as_csv, true);
         assert_eq!(settings.ng.show_popup, false);
         assert_eq!(settings.logs.prefix, "TEST");
+        assert_eq!(settings.hide_on_minimize, true);
+        assert_eq!(settings.save_settings_on_exit, true);
+        assert_eq!(settings.logs.auto_save, true);
+        assert_eq!(settings.ng.execute_on_delay, true);
+        assert_eq!(settings.ng.delay_ms, 300);
+        assert_eq!(settings.ng.not_if_previous_ng, false);
+        assert_eq!(settings.ok.not_if_previous_ok, false);
+        assert_eq!(settings.ng.notify_on_interval_only, true);
+        assert_eq!(settings.ok.notify_on_interval_only, true);
+        assert_eq!(settings.ng.not_until_count_reached, true);
+        assert_eq!(settings.ng.count_consecutive_only, true);
     }
 
     #[test]
