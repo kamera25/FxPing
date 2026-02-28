@@ -308,3 +308,37 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_csp_settings_for_audio() {
+        // Find tauri.conf.json
+        // Due to how Cargo runs tests, the current directory is usually the crate root (`src-tauri`).
+        let config_path = PathBuf::from("tauri.conf.json");
+        let content =
+            std::fs::read_to_string(&config_path).expect("Failed to read tauri.conf.json");
+
+        let json: serde_json::Value =
+            serde_json::from_str(&content).expect("Failed to parse tauri.conf.json");
+
+        let csp = json["app"]["security"]["csp"]
+            .as_str()
+            .expect("Failed to find app.security.csp in tauri.conf.json");
+
+        assert!(
+            csp.contains("media-src 'self' blob:"),
+            "CSP does not contain media-src 'self' blob: for audio playback. Current CSP: {}",
+            csp
+        );
+
+        // Also ensure connect-src 'none' is NOT present as it breaks Tauri IPC
+        assert!(
+            !csp.contains("connect-src 'none'"),
+            "CSP should not contain connect-src 'none' as it breaks Tauri IPC. Current CSP: {}",
+            csp
+        );
+    }
+}
