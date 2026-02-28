@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
-use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 mod error;
 mod pinger;
@@ -179,7 +179,21 @@ fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         ],
     )?;
 
-    let menu = Menu::with_items(app, &[&products_menu, &edit_menu])?;
+    let help_menu = Submenu::with_id_and_items(
+        app,
+        "help",
+        "ヘルプ",
+        true,
+        &[&MenuItem::with_id(
+            app,
+            "view_help",
+            "ヘルプを見る",
+            true,
+            None::<&str>,
+        )?],
+    )?;
+
+    let menu = Menu::with_items(app, &[&products_menu, &edit_menu, &help_menu])?;
 
     app.set_menu(menu)?;
 
@@ -194,7 +208,16 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .on_menu_event(|app, event| {
+            if event.id == "view_help" {
+                use tauri_plugin_opener::OpenerExt;
+                let _ = app
+                    .opener()
+                    .open_url("https://github.com/kamera25", None::<&str>);
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             ping_target,
             traceroute_target,
