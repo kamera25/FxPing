@@ -49,6 +49,11 @@ export const useSettings = () => {
     const playSound = useCallback(async (filePath: string) => {
         if (!filePath) return;
         try {
+            const playedNatively = await invoke<boolean>("play_sound_native", { path: filePath });
+            if (playedNatively) {
+                return;
+            }
+
             const bytes = await invoke<number[]>("read_file_bytes", { path: filePath });
             const uint8 = new Uint8Array(bytes);
             let mimeType = 'audio/wav';

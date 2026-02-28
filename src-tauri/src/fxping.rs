@@ -144,6 +144,24 @@ async fn launch_external_program(
 }
 
 #[tauri::command]
+fn play_sound_native(path: String) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        tauri::async_runtime::spawn(async move {
+            let _ = tokio::process::Command::new("afplay")
+                .arg(&path)
+                .status()
+                .await;
+        });
+        return true;
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        return false;
+    }
+}
+
+#[tauri::command]
 fn read_file_bytes(path: String) -> Result<Vec<u8>, FxPingError> {
     Ok(std::fs::read(&path)?)
 }
@@ -277,7 +295,8 @@ pub fn run() {
             launch_external_program,
             load_def_targets,
             load_settings_from_ini,
-            save_settings_to_ini
+            save_settings_to_ini,
+            play_sound_native
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
