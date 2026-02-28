@@ -62,7 +62,7 @@ export const useTargets = () => {
         return { newTargets, invalidHosts };
     };
 
-    const applyParsedTargets = (newTargets: Target[], invalidHosts: string[]) => {
+    const applyParsedTargets = (newTargets: Target[], _invalidHosts: string[]) => {
 
         if (newTargets.length > 0) {
             setTargets(newTargets);
