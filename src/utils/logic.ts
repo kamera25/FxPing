@@ -1,6 +1,52 @@
 import { PingResult, Target, TargetStats, Settings, TraceResult } from "../types";
 
 /**
+ * Validates if a string is a valid IPv4, IPv6, FQDN, or localhost.
+ */
+export function isValidHost(host: string): boolean {
+    const s = host.trim();
+    if (!s) return false;
+
+    // 1. Check if it's "localhost"
+    if (s.toLowerCase() === "localhost") return true;
+
+    // 2. Simple regex for IPv4 (more precise checks are usually done via parsing, but this is good for UI feedback)
+    // Ensure we match the whole string and it has exactly 4 parts
+    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (ipv4Regex.test(s)) {
+        const parts = s.split('.');
+        return parts.every(p => {
+            const n = parseInt(p, 10);
+            return n >= 0 && n <= 255;
+        });
+    }
+
+    // 3. Simple check for IPv6 (contains : and valid hex/dots)
+    // We can at least check if it looks like one.
+    if (s.includes(':')) {
+        // Very basic IPv6 format check (contains hex and colons)
+        const ipv6Regex = /^[a-fA-F0-9:]+(%[a-zA-Z0-9]+)?$/;
+        if (ipv6Regex.test(s)) return true;
+    }
+
+    // 4. Check if it's an FQDN or a valid hostname
+    // NOTE: If it consists only of digits and dots, it might be a malformed IPv4.
+    if (/^[0-9.]+$/.test(s)) {
+        // If it got here, it's already failed the ipv4Regex (which strictly matches 4 parts 0-255).
+        // Since it only contains digits and dots, it cannot be a valid FQDN label (must contain at least one letter to be a hostname label if we want to distinguish from IPs).
+        // Actually, some standards allow all-numeric labels, but for this app, 
+        // we treat all-numeric+dots as IP addresses, and they must be valid ones.
+        return false;
+    }
+
+    // Using the same regex as host.rs
+    const validHostRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    if (validHostRegex.test(s)) return true;
+
+    return false;
+}
+
+/**
  * Parses ExPing format text into Target objects.
  * Supports "host remarks" format and ignores lines starting with ' or ‘.
  */

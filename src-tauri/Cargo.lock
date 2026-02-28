@@ -9,6 +9,7 @@ dependencies = [
  "chrono",
  "dns-lookup",
  "libc",
+ "regex",
  "rust-ini",
  "serde",
  "serde_json",

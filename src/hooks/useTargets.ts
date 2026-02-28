@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useStore } from "../store/useStore";
 import { Target } from "../types";
-import { parseExPingText } from "../utils/logic";
+import { parseExPingText, isValidHost } from "../utils/logic";
 
 export const useTargets = () => {
     const {
@@ -21,6 +21,11 @@ export const useTargets = () => {
 
     const addTarget = async () => {
         if (!newTarget) {
+            triggerShake();
+            return;
+        }
+
+        if (!isValidHost(newTarget)) {
             triggerShake();
             return;
         }
@@ -48,20 +53,16 @@ export const useTargets = () => {
         const invalidHosts: string[] = [];
 
         for (const item of items) {
-            try {
-                await invoke("validate_host", { host: item.host });
+            if (isValidHost(item.host)) {
                 newTargets.push(item);
-            } catch (e) {
-                invalidHosts.push(`${item.host} (${e})`);
+            } else {
+                invalidHosts.push(`${item.host} (Invalid format)`);
             }
         }
         return { newTargets, invalidHosts };
     };
 
     const applyParsedTargets = (newTargets: Target[], invalidHosts: string[]) => {
-        if (invalidHosts.length > 0) {
-            alert(`The following targets were skipped due to validation errors:\n${invalidHosts.join('\n')}`);
-        }
 
         if (newTargets.length > 0) {
             setTargets(newTargets);

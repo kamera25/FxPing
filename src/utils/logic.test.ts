@@ -5,11 +5,58 @@ import {
     checkNgConditions,
     formatPingResultsCsvRows,
     formatStatsCsvRows,
-    formatTraceResultsText
+    formatTraceResultsText,
+    isValidHost
 } from './logic';
 import { PingResult, Target, TargetStats, Settings, TraceResult } from '../types';
 
 describe('logic.ts', () => {
+    describe('isValidHost', () => {
+        it('should validate localhost', () => {
+            expect(isValidHost("localhost")).toBe(true);
+            expect(isValidHost("LOCALHOST")).toBe(true);
+        });
+
+        it('should validate valid IPv4', () => {
+            expect(isValidHost("127.0.0.1")).toBe(true);
+            expect(isValidHost("192.168.1.1")).toBe(true);
+            expect(isValidHost("8.8.8.8")).toBe(true);
+        });
+
+        it('should invalidate invalid IPv4', () => {
+            expect(isValidHost("256.0.0.1")).toBe(false);
+            expect(isValidHost("127.0.0.1.1")).toBe(false);
+            expect(isValidHost("127.0.0")).toBe(false);
+        });
+
+        it('should validate 4-part FQDNs', () => {
+            expect(isValidHost("a.b.c.d")).toBe(true);
+        });
+
+        it('should validate valid IPv6', () => {
+            expect(isValidHost("::1")).toBe(true);
+            expect(isValidHost("2001:db8::1")).toBe(true);
+            expect(isValidHost("2001:0db8:85a3:0000:0000:8a2e:0370:7334")).toBe(true);
+            expect(isValidHost("fe80::1%en0")).toBe(true);
+        });
+
+        it('should validate valid FQDNs', () => {
+            expect(isValidHost("google.com")).toBe(true);
+            expect(isValidHost("www.example.co.jp")).toBe(true);
+            expect(isValidHost("my-server.local")).toBe(true);
+            expect(isValidHost("a.b.c")).toBe(true);
+        });
+
+        it('should invalidate invalid FQDNs', () => {
+            expect(isValidHost("-google.com")).toBe(false);
+            expect(isValidHost("google-.com")).toBe(false);
+            expect(isValidHost("google..com")).toBe(false);
+            expect(isValidHost("host_name")).toBe(false);
+            expect(isValidHost("")).toBe(false);
+            expect(isValidHost(" ")).toBe(false);
+        });
+    });
+
     describe('parseExPingText', () => {
         it('should parse simple hosts', () => {
             const text = "198.51.100.1\n1.1.1.1";
