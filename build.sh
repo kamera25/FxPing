@@ -5,7 +5,12 @@
 set -e
 
 echo "🔨 FxPing リリースビルドを開始します..."
-APPLE_SIGNING_IDENTITY="-" npm run tauri build
+
+
+BUILD_CMD="APPLE_SIGNING_IDENTITY=\"-\" npm run tauri build"
+
+# 実行
+eval "$BUILD_CMD"
 
 echo ""
 echo "✅ ビルド完了!"
