@@ -61,7 +61,7 @@ impl Tracer {
     ) -> Result<Self, FxPingError> {
         let ip = crate::resolve::resolve_host(&target.to_string())?;
 
-        let inner: Box<dyn TracerImpl> = if protocol == Protocol::ICMP {
+        let inner: Box<dyn TracerImpl> = if protocol.is_icmp() {
             Box::new(ICMPTracer::new(
                 ip,
                 timeout,
@@ -137,7 +137,7 @@ mod tests {
         let timeout = Timeout::new(1000).unwrap();
         let payload_size = PayloadSize::new(32).unwrap();
         let hops = Hop::new(30).unwrap();
-        let tracer = Tracer::new(target, timeout, payload_size, hops, Protocol::ICMP, true).await;
+        let tracer = Tracer::new(target, timeout, payload_size, hops, Protocol::icmp(), true).await;
         assert!(tracer.is_ok());
         let tracer = tracer.unwrap();
         assert_eq!(tracer.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
