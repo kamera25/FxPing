@@ -115,7 +115,7 @@ impl TracerImpl for UDPTracer {
                     for ttl_val in 1..=max_hops.value() {
                         let ttl = Hop::new(ttl_val as u32).unwrap_or(max_hops);
                         if ip.is_ipv4() {
-                            if let Err(e) = send_socket.set_ttl(ttl.value()) {
+                            if let Err(e) = send_socket.set_ttl_v4(ttl.value()) {
                                 return Err(crate::FxPingError::TraceFailed(format!("Failed to set TTL: {}", e)));
                             }
                         } else {

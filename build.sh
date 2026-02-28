@@ -1,17 +1,47 @@
 #!/bin/bash
 # FxPing ビルドスクリプト
-# entitlementsを正しく埋め込むため、APPLE_SIGNING_IDENTITY を設定してビルドします。
+# macOS では DMG、Windows (Git Bash等) では NSIS インストーラーを生成します。
 
 set -e
 
+PLATFORM="macos"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    PLATFORM="windows"
+fi
+
+# 引数でターゲットを明示的に指定可能にする (--windows)
+BUILD_WINDOWS=false
+for arg in "$@"; do
+    if [ "$arg" == "--windows" ]; then
+        BUILD_WINDOWS=true
+    fi
+done
+
 echo "🔨 FxPing リリースビルドを開始します..."
 
-
-BUILD_CMD="APPLE_SIGNING_IDENTITY=\"-\" npm run tauri build"
-
-# 実行
-eval "$BUILD_CMD"
+if [ "$PLATFORM" == "macos" ]; then
+    echo "🍎 macOS (DMG) のビルド中..."
+    APPLE_SIGNING_IDENTITY="-" npm run tauri build
+    
+    if [ "$BUILD_WINDOWS" = true ]; then
+        echo ""
+        echo "🪟 Windows (EXE) のクロスビルドを試行します..."
+        echo "⚠️  注意: これには cargo-xwin と NSIS (Homebrew) 等のセットアップが必要です。"
+        npm run tauri build -- --target x86_64-pc-windows-gnu
+    fi
+else
+    echo "🪟 Windows (EXE) のビルド中..."
+    npm run tauri build
+fi
 
 echo ""
 echo "✅ ビルド完了!"
-echo "📦 DMG: src-tauri/target/release/bundle/dmg/"
+
+if [ "$PLATFORM" == "macos" ]; then
+    echo "📦 DMG: src-tauri/target/release/bundle/dmg/"
+    if [ "$BUILD_WINDOWS" = true ]; then
+        echo "📦 EXE: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/"
+    fi
+else
+    echo "📦 EXE: src-tauri/target/release/bundle/nsis/"
+fi

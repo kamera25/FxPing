@@ -55,10 +55,21 @@ npm run tauri dev
 
 ## 🏗️ ビルド
 
+### macOS
 ```bash
-# リリースビルド（macOS .dmg）
-npm run tauri build
+# クイックビルド (.dmg)
+./build.sh
+
+# Windows向けも同時にビルドする場合 (要セットアップ)
+./build.sh --windows
 ```
+
+### Windows (Git Bash / WSL)
+```bash
+# インストーラー (.exe) のビルド
+./build.sh
+```
+
 
 ビルド成果物は `src-tauri/target/release/bundle/` に生成されます。
 
