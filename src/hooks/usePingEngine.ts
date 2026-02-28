@@ -4,6 +4,7 @@ import { useStore } from "../store/useStore";
 import { PingResult, Target, TraceResult } from "../types";
 import { updateTargetStats } from "../utils/logic";
 import { useNgDetection } from "./useNgDetection";
+import { useOkDetection } from "./useOkDetection";
 
 export const usePingEngine = () => {
     const {
@@ -23,6 +24,7 @@ export const usePingEngine = () => {
     } = useStore();
 
     const { handleNgDetection } = useNgDetection();
+    const { handleOkDetection } = useOkDetection();
 
     const runTraceRoute = async () => {
         setIsTracing(true);
@@ -117,6 +119,7 @@ export const usePingEngine = () => {
 
                     setTargetStats(prev => updateTargetStats(prev, newResults));
                     handleNgDetection(newResults);
+                    handleOkDetection(newResults);
 
                 } catch (e) {
                     console.error("Ping error", e);
@@ -144,7 +147,7 @@ export const usePingEngine = () => {
         } else {
             setNextPingTimeMs(null);
         }
-    }, [isPinging, targets, settings, setIsPinging, setIsRunActive, setResults, setTargetStats, setNextPingTimeMs, handleNgDetection]);
+    }, [isPinging, targets, settings, setIsPinging, setIsRunActive, setResults, setTargetStats, setNextPingTimeMs, handleNgDetection, handleOkDetection]);
 
     useEffect(() => {
         let periodicTimer: number | undefined;

@@ -76,6 +76,17 @@ export interface Settings {
         countConsecutiveOnly: boolean;
         notifyOnIntervalOnly: boolean;
     };
+    ok: {
+        showPopup: boolean;
+        playSound: boolean;
+        soundFile: string;
+        launchProgram: boolean;
+        programPath: string;
+        programOptions: string;
+        programWorkingDir: string;
+        notIfPreviousOk: boolean;
+        notifyOnIntervalOnly: boolean;
+    };
     logs: {
         autoSave: boolean;
         savePath: string;

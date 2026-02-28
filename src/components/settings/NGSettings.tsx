@@ -6,7 +6,7 @@ interface NGSettingsProps {
     settings: Settings;
     setSettings: (settings: Settings) => void;
     selectFile: (type: 'sound' | 'program') => Promise<void>;
-    selectDir: (target: 'ng' | 'logs') => Promise<void>;
+    selectDir: () => Promise<void>;
     playSound: (filePath: string) => Promise<void>;
 }
 
@@ -61,7 +61,7 @@ const NGSettings: React.FC<NGSettingsProps> = ({
                         <label style={{ width: '100px', fontSize: '12px' }}>作業フォルダ:</label>
                         <div className={styles.pathInputGroup}>
                             <input type="text" value={settings.ng.programWorkingDir} onChange={e => setSettings({ ...settings, ng: { ...settings.ng, programWorkingDir: e.target.value } })} disabled={!settings.ng.launchProgram} />
-                            <button className={styles.btnSmall} onClick={() => selectDir('ng')} disabled={!settings.ng.launchProgram}>選択</button>
+                            <button className={styles.btnSmall} onClick={() => selectDir()} disabled={!settings.ng.launchProgram}>選択</button>
                         </div>
                     </div>
                 </div>

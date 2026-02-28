@@ -133,6 +133,50 @@ export function checkNgConditions(
 }
 
 /**
+ * Processes new ping results to detect OK conditions and determine if an alert should trigger.
+ */
+export function checkOkConditions(
+    prevOkStats: Record<string, NgDetectionState>,
+    newResults: PingResult[],
+    settings: Settings
+): NgDetectionResult {
+    const nextStats = { ...prevOkStats };
+    let alertToTrigger: { target: string, timestamp: string, reason: string } | null = null;
+
+    newResults.forEach(res => {
+        const isOk = res.time_ms !== null;
+        const current = nextStats[res.target] || { consecutiveCount: 0, alerted: false };
+        const nextConsecutive = isOk ? current.consecutiveCount + 1 : 0;
+        let nextAlerted = current.alerted;
+
+        if (isOk && settings.ok.showPopup) {
+            let shouldTrigger = true;
+
+            if (settings.ok.notIfPreviousOk && current.consecutiveCount > 0) {
+                shouldTrigger = false;
+            }
+
+            if (shouldTrigger) {
+                if (!alertToTrigger) {
+                    alertToTrigger = {
+                        target: res.target,
+                        timestamp: res.timestamp,
+                        reason: "OK"
+                    };
+                }
+                nextAlerted = true;
+            }
+        } else if (!isOk) {
+            nextAlerted = false;
+        }
+
+        nextStats[res.target] = { consecutiveCount: nextConsecutive, alerted: nextAlerted };
+    });
+
+    return { nextStats, alertToTrigger };
+}
+
+/**
  * Formats ping results into CSV string rows (without header).
  */
 export function formatPingResultsCsvRows(results: PingResult[]): string {

@@ -109,6 +109,26 @@ async fn append_text_file(path: String, content: String) -> Result<(), FxPingErr
 }
 
 #[tauri::command]
+async fn launch_external_program(
+    path: String,
+    options: String,
+    working_dir: String,
+) -> Result<(), FxPingError> {
+    let mut command = std::process::Command::new(&path);
+    if !options.is_empty() {
+        for arg in options.split_whitespace() {
+            command.arg(arg);
+        }
+    }
+    if !working_dir.is_empty() {
+        command.current_dir(working_dir);
+    }
+
+    command.spawn()?;
+    Ok(())
+}
+
+#[tauri::command]
 fn read_file_bytes(path: String) -> Result<Vec<u8>, FxPingError> {
     Ok(std::fs::read(&path)?)
 }
@@ -228,7 +248,8 @@ pub fn run() {
             get_platform,
             read_file_bytes,
             is_admin,
-            show_main_window
+            show_main_window,
+            launch_external_program
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

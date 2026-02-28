@@ -36,9 +36,11 @@ interface AppState {
     nextPingTimeMs: number | null;
     setNextPingTimeMs: (time: number | null) => void;
 
-    // Alerts & NG stats
+    // Alerts & NG/OK stats
     targetNgStats: Record<string, { consecutiveCount: number, alerted: boolean }>;
     setTargetNgStats: (stats: Record<string, { consecutiveCount: number, alerted: boolean }> | ((prev: Record<string, { consecutiveCount: number, alerted: boolean }>) => Record<string, { consecutiveCount: number, alerted: boolean }>)) => void;
+    targetOkStats: Record<string, { consecutiveCount: number, alerted: boolean }>;
+    setTargetOkStats: (stats: Record<string, { consecutiveCount: number, alerted: boolean }> | ((prev: Record<string, { consecutiveCount: number, alerted: boolean }>) => Record<string, { consecutiveCount: number, alerted: boolean }>)) => void;
     activeAlert: { target: string, timestamp: string, reason: string } | null;
     setActiveAlert: (alert: { target: string, timestamp: string, reason: string } | null | ((prev: { target: string, timestamp: string, reason: string } | null) => { target: string, timestamp: string, reason: string } | null)) => void;
 
@@ -108,10 +110,14 @@ export const useStore = create<AppState>((set) => ({
     nextPingTimeMs: null,
     setNextPingTimeMs: (nextPingTimeMs) => set({ nextPingTimeMs }),
 
-    // Alerts & NG stats
+    // Alerts & NG/OK stats
     targetNgStats: {},
     setTargetNgStats: (updater) => set((state) => ({
         targetNgStats: typeof updater === 'function' ? updater(state.targetNgStats) : updater
+    })),
+    targetOkStats: {},
+    setTargetOkStats: (updater) => set((state) => ({
+        targetOkStats: typeof updater === 'function' ? updater(state.targetOkStats) : updater
     })),
     activeAlert: null,
     setActiveAlert: (updater) => set((state) => ({
@@ -154,6 +160,17 @@ export const useStore = create<AppState>((set) => ({
             notUntilCountReached: true,
             countToNotify: 3,
             countConsecutiveOnly: true,
+            notifyOnIntervalOnly: false,
+        },
+        ok: {
+            showPopup: false,
+            playSound: false,
+            soundFile: "",
+            launchProgram: false,
+            programPath: "",
+            programOptions: "",
+            programWorkingDir: "",
+            notIfPreviousOk: true,
             notifyOnIntervalOnly: false,
         },
         logs: {

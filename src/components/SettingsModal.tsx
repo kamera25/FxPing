@@ -11,8 +11,8 @@ interface SettingsModalProps {
     settings: Settings;
     setSettings: (settings: Settings) => void;
     setShowSettings: (show: boolean) => void;
-    selectFile: (type: 'sound' | 'program') => Promise<void>;
-    selectDir: (target: 'ng' | 'logs') => Promise<void>;
+    selectFile: (section: 'ng' | 'ok', type: 'sound' | 'program') => Promise<void>;
+    selectDir: (target: 'ng' | 'ok' | 'logs') => Promise<void>;
     playSound: (filePath: string) => Promise<void>;
 }
 
@@ -39,13 +39,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <NGSettings
                         settings={settings}
                         setSettings={setSettings}
-                        selectFile={selectFile}
+                        selectFile={(type) => selectFile('ng', type)}
                         selectDir={() => selectDir('ng')}
                         playSound={playSound}
                     />
                 );
             case 'ok':
-                return <OKSettings />;
+                return (
+                    <OKSettings
+                        settings={settings}
+                        setSettings={setSettings}
+                        selectFile={(type) => selectFile('ok', type)}
+                        selectDir={() => selectDir('ok')}
+                        playSound={playSound}
+                    />
+                );
             default:
                 return null;
         }

@@ -5,7 +5,7 @@ import { useStore } from "../store/useStore";
 export const useSettings = () => {
     const { setSettings, setPlatform } = useStore();
 
-    const selectFile = useCallback(async (type: 'sound' | 'program') => {
+    const selectFile = useCallback(async (section: 'ng' | 'ok', type: 'sound' | 'program') => {
         const { open } = await import("@tauri-apps/plugin-dialog");
         try {
             const selected = await open({
@@ -17,9 +17,9 @@ export const useSettings = () => {
             });
             if (selected && !Array.isArray(selected)) {
                 if (type === 'sound') {
-                    setSettings((prev) => ({ ...prev, ng: { ...prev.ng, soundFile: selected } }));
+                    setSettings((prev) => ({ ...prev, [section]: { ...prev[section], soundFile: selected } }));
                 } else {
-                    setSettings((prev) => ({ ...prev, ng: { ...prev.ng, programPath: selected } }));
+                    setSettings((prev) => ({ ...prev, [section]: { ...prev[section], programPath: selected } }));
                 }
             }
         } catch (e) {
@@ -27,7 +27,7 @@ export const useSettings = () => {
         }
     }, [setSettings]);
 
-    const selectDir = useCallback(async (target: 'ng' | 'logs' = 'ng') => {
+    const selectDir = useCallback(async (target: 'ng' | 'ok' | 'logs' = 'ng') => {
         const { open } = await import("@tauri-apps/plugin-dialog");
         try {
             const selected = await open({
@@ -35,9 +35,9 @@ export const useSettings = () => {
                 directory: true,
             });
             if (selected && !Array.isArray(selected)) {
-                if (target === 'ng') {
-                    setSettings((prev) => ({ ...prev, ng: { ...prev.ng, programWorkingDir: selected } }));
-                } else {
+                if (target === 'ng' || target === 'ok') {
+                    setSettings((prev) => ({ ...prev, [target]: { ...prev[target], programWorkingDir: selected } }));
+                } else if (target === 'logs') {
                     setSettings((prev) => ({ ...prev, logs: { ...prev.logs, savePath: selected } }));
                 }
             }
