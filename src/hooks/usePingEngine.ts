@@ -60,6 +60,14 @@ export const usePingEngine = () => {
             let isExecuting = false;
             let lastPingTime = Date.now();
 
+            // Reset suppression stats if notifyOnIntervalOnly is enabled
+            if (settings.ng.notifyOnIntervalOnly) {
+                useStore.getState().setTargetNgStats({});
+            }
+            if (settings.ok.notifyOnIntervalOnly) {
+                useStore.getState().setTargetOkStats({});
+            }
+
             const runPing = async () => {
                 if (isExecuting) return;
                 isExecuting = true;

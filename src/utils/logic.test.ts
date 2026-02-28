@@ -160,6 +160,7 @@ describe('logic.ts', () => {
                 notUntilCountReached: true,
                 countToNotify: 3,
                 onceOnly: false,
+                countConsecutiveOnly: true,
             }
         } as Settings;
 
@@ -276,6 +277,52 @@ describe('logic.ts', () => {
             }];
             const { alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
             expect(alertToTrigger).toBeNull();
+        });
+
+        it('should keep count on success when countConsecutiveOnly is false', () => {
+            const settings = {
+                ng: {
+                    showPopup: true,
+                    notUntilCountReached: true,
+                    countToNotify: 3,
+                    countConsecutiveOnly: false,
+                }
+            } as Settings;
+            const prevNgStats = { "198.51.100.1": { consecutiveCount: 2, alerted: false } };
+            const results: PingResult[] = [{
+                status: "OK",
+                timestamp: "...",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: 10,
+                remarks: ""
+            }];
+            const { nextStats } = checkNgConditions(prevNgStats, results, settings);
+            expect(nextStats["198.51.100.1"].consecutiveCount).toBe(2);
+        });
+
+        it('should increment non-consecutive count and trigger alert', () => {
+            const settings = {
+                ng: {
+                    showPopup: true,
+                    notUntilCountReached: true,
+                    countToNotify: 3,
+                    countConsecutiveOnly: false,
+                }
+            } as Settings;
+            // 2 NGs already happened, and we are currently OK (count stays 2)
+            const prevNgStats = { "198.51.100.1": { consecutiveCount: 2, alerted: false } };
+            const results: PingResult[] = [{
+                status: "Timeout",
+                timestamp: "...",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: null,
+                remarks: ""
+            }];
+            const { nextStats, alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
+            expect(nextStats["198.51.100.1"].consecutiveCount).toBe(3);
+            expect(alertToTrigger).not.toBeNull();
         });
     });
 

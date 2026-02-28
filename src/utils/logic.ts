@@ -142,8 +142,15 @@ export function checkNgConditions(
     newResults.forEach(res => {
         const isNg = res.time_ms === null;
         const current = nextStats[res.target] || { consecutiveCount: 0, alerted: false };
-        const nextConsecutive = isNg ? current.consecutiveCount + 1 : 0;
-        let nextAlerted = isNg ? current.alerted : false;
+        let nextConsecutive = 0;
+        if (isNg) {
+            nextConsecutive = current.consecutiveCount + 1;
+        } else {
+            // If counting consecutive only, reset on success.
+            // Otherwise, keep the total count until we decide to reset it (e.g. at interval start).
+            nextConsecutive = settings.ng.countConsecutiveOnly ? 0 : current.consecutiveCount;
+        }
+        let nextAlerted = isNg ? current.alerted : (settings.ng.countConsecutiveOnly ? false : current.alerted);
 
         if (isNg && settings.ng.showPopup) {
             const threshold = settings.ng.notUntilCountReached ? settings.ng.countToNotify : 1;
