@@ -58,16 +58,25 @@ async fn traceroute_target(
     resolve_hostnames: bool,
     protocol: Protocol,
 ) -> Result<tracer::TraceResult, FxPingError> {
-    let tracer = Tracer::new(
-        target,
+    match Tracer::new(
+        target.clone(),
         timeout_ms,
         payload_size,
         max_hops,
         protocol,
         resolve_hostnames,
     )
-    .await?;
-    tracer.trace(app).await
+    .await
+    {
+        Ok(tracer) => tracer.trace(app).await,
+        Err(FxPingError::DnsResolution { .. }) => Ok(tracer::TraceResult {
+            target,
+            ping_ok: Some(false),
+            hops: Vec::new(),
+            timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
+        }),
+        Err(e) => Err(e),
+    }
 }
 
 #[tauri::command]

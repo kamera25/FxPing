@@ -38,7 +38,13 @@ export const usePingEngine = () => {
                     resolveHostnames: settings.resolveHostnames,
                     protocol: traceProtocol
                 });
-                setTraceResults(prev => prev.map(r => r.target === res.target ? res : r));
+                setTraceResults(prev => {
+                    const exists = prev.some(r => r.target === res.target);
+                    if (exists) {
+                        return prev.map(r => r.target === res.target ? res : r);
+                    }
+                    return [...prev, res];
+                });
             } catch (e) {
                 console.error("Trace error", e);
             }
