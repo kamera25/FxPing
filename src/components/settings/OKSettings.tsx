@@ -19,7 +19,7 @@ const OKSettings: React.FC<OKSettingsProps> = ({
 }) => {
     return (
         <div className={styles.settingsGrid} style={{ gridTemplateColumns: '1fr' }}>
-            <div className={styles.fieldRow}>
+            <div className={styles.settingsSection}>
                 <label className={styles.checkboxLabel}>
                     <input
                         type="checkbox"
@@ -28,15 +28,19 @@ const OKSettings: React.FC<OKSettingsProps> = ({
                     />
                     音を鳴らす
                 </label>
-                <div className={styles.pathInputGroup} style={{ opacity: settings.ok.playSound ? 1 : 0.5 }}>
-                    <input
-                        type="text"
-                        value={settings.ok.soundFile}
-                        onChange={e => setSettings({ ...settings, ok: { ...settings.ok, soundFile: e.target.value } })}
-                        disabled={!settings.ok.playSound}
-                    />
-                    <button className={styles.btnSmall} onClick={() => selectFile('sound')} disabled={!settings.ok.playSound}>...</button>
-                    <button className={styles.btnSmall} disabled={!settings.ok.playSound} onClick={() => playSound(settings.ok.soundFile)}>♪</button>
+                <div className={styles.nestedFields} style={{ opacity: settings.ok.playSound ? 1 : 0.5 }}>
+                    <div className={styles.fieldRow}>
+                        <div className={styles.pathInputGroup}>
+                            <input
+                                type="text"
+                                value={settings.ok.soundFile}
+                                onChange={e => setSettings({ ...settings, ok: { ...settings.ok, soundFile: e.target.value } })}
+                                disabled={!settings.ok.playSound}
+                            />
+                            <button className={styles.btnSmall} onClick={() => selectFile('sound')} disabled={!settings.ok.playSound}>...</button>
+                            <button className={styles.btnSmall} disabled={!settings.ok.playSound} onClick={() => playSound(settings.ok.soundFile)}>♪</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

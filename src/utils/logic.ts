@@ -152,7 +152,7 @@ export function checkNgConditions(
         }
         let nextAlerted = isNg ? current.alerted : (settings.ng.countConsecutiveOnly ? false : current.alerted);
 
-        if (isNg && settings.ng.showPopup) {
+        if (isNg) {
             const threshold = settings.ng.notUntilCountReached ? settings.ng.countToNotify : 1;
             let shouldTrigger = false;
 
@@ -206,7 +206,7 @@ export function checkOkConditions(
         const nextConsecutive = isOk ? current.consecutiveCount + 1 : 0;
         let nextAlerted = current.alerted;
 
-        if (isOk && settings.ok.showPopup) {
+        if (isOk) {
             let shouldTrigger = true;
 
             if (settings.ok.notIfPreviousOk && current.consecutiveCount > 0) {

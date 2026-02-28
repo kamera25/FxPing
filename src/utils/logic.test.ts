@@ -3,6 +3,7 @@ import {
     parseExPingText,
     updateTargetStats,
     checkNgConditions,
+    checkOkConditions,
     formatPingResultsCsvRows,
     formatStatsCsvRows,
     formatTraceResultsText,
@@ -322,6 +323,86 @@ describe('logic.ts', () => {
             }];
             const { nextStats, alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
             expect(nextStats["198.51.100.1"].consecutiveCount).toBe(3);
+            expect(alertToTrigger).not.toBeNull();
+        });
+
+        it('should trigger alert even if showPopup is false', () => {
+            const settings = {
+                ng: {
+                    showPopup: false,
+                    notUntilCountReached: false,
+                    onceOnly: false,
+                }
+            } as Settings;
+            const prevNgStats = {};
+            const results: PingResult[] = [{
+                status: "Timeout",
+                timestamp: "...",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: null,
+                remarks: ""
+            }];
+            const { alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
+            expect(alertToTrigger).not.toBeNull();
+        });
+    });
+
+    describe('checkOkConditions', () => {
+        const defaultSettings = {
+            ok: {
+                showPopup: true,
+                notIfPreviousOk: true,
+                playSound: true,
+            }
+        } as Settings;
+
+        it('should trigger OK alert when coming from first success', () => {
+            const prevOkStats = {};
+            const results: PingResult[] = [{
+                status: "OK",
+                timestamp: "2024-01-01 12:00:00",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: 10,
+                remarks: ""
+            }];
+            const { alertToTrigger, nextStats } = checkOkConditions(prevOkStats, results, defaultSettings);
+            expect(alertToTrigger).not.toBeNull();
+            expect(nextStats["198.51.100.1"].consecutiveCount).toBe(1);
+        });
+
+        it('should NOT trigger OK alert if notIfPreviousOk is true and previous was OK', () => {
+            const prevOkStats = { "198.51.100.1": { consecutiveCount: 1, alerted: true } };
+            const results: PingResult[] = [{
+                status: "OK",
+                timestamp: "2024-01-01 12:00:00",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: 10,
+                remarks: ""
+            }];
+            const { alertToTrigger } = checkOkConditions(prevOkStats, results, defaultSettings);
+            expect(alertToTrigger).toBeNull();
+        });
+
+        it('should trigger alert even if showPopup is false', () => {
+            const settings = {
+                ok: {
+                    showPopup: false,
+                    notIfPreviousOk: false,
+                }
+            } as Settings;
+            const prevOkStats = {};
+            const results: PingResult[] = [{
+                status: "OK",
+                timestamp: "2024-01-01 12:00:00",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: 10,
+                remarks: ""
+            }];
+            const { alertToTrigger } = checkOkConditions(prevOkStats, results, settings);
             expect(alertToTrigger).not.toBeNull();
         });
     });

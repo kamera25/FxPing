@@ -28,15 +28,19 @@ const NGSettings: React.FC<NGSettingsProps> = ({
                 ポップアップメッセージを表示
             </label>
 
-            <div className={styles.fieldRow}>
+            <div className={styles.settingsSection}>
                 <label className={styles.checkboxLabel}>
                     <input type="checkbox" checked={settings.ng.playSound} onChange={e => setSettings({ ...settings, ng: { ...settings.ng, playSound: e.target.checked } })} />
                     音を鳴らす
                 </label>
-                <div className={styles.pathInputGroup} style={{ opacity: settings.ng.playSound ? 1 : 0.5 }}>
-                    <input type="text" value={settings.ng.soundFile} onChange={e => setSettings({ ...settings, ng: { ...settings.ng, soundFile: e.target.value } })} disabled={!settings.ng.playSound} />
-                    <button className={styles.btnSmall} onClick={() => selectFile('sound')} disabled={!settings.ng.playSound}>選択</button>
-                    <button className={styles.btnSmall} disabled={!settings.ng.playSound} onClick={() => playSound(settings.ng.soundFile)}>テスト</button>
+                <div className={styles.nestedFields} style={{ opacity: settings.ng.playSound ? 1 : 0.5 }}>
+                    <div className={styles.fieldRow}>
+                        <div className={styles.pathInputGroup}>
+                            <input type="text" value={settings.ng.soundFile} onChange={e => setSettings({ ...settings, ng: { ...settings.ng, soundFile: e.target.value } })} disabled={!settings.ng.playSound} />
+                            <button className={styles.btnSmall} onClick={() => selectFile('sound')} disabled={!settings.ng.playSound}>選択</button>
+                            <button className={styles.btnSmall} disabled={!settings.ng.playSound} onClick={() => playSound(settings.ng.soundFile)}>テスト</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

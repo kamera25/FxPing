@@ -24,7 +24,9 @@ export const useNgDetection = () => {
         });
 
         if (alertToTrigger) {
-            setActiveAlert(current => current || alertToTrigger);
+            if (settings.ng.showPopup) {
+                setActiveAlert(current => current || alertToTrigger);
+            }
 
             if (settings.ng.playSound && settings.ng.soundFile) {
                 playSound(settings.ng.soundFile);
