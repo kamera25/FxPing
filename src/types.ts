@@ -1,6 +1,6 @@
 export interface PingResult {
     target: string;
-    ip: string;
+    ip: string | null;
     time_ms: number | null;
     status: string;
     timestamp: string;

@@ -34,8 +34,18 @@ async fn ping_target(
     payload_size: PayloadSize,
     ttl: Hop,
 ) -> Result<PingResult, FxPingError> {
-    let pinger = Pinger::new(target, timeout_ms, payload_size, ttl).await?;
-    pinger.ping(remarks).await
+    match Pinger::new(target.clone(), timeout_ms, payload_size, ttl).await {
+        Ok(pinger) => pinger.ping(remarks).await,
+        Err(FxPingError::DnsResolution { .. }) => Ok(PingResult {
+            target,
+            ip: None,
+            time_ms: None,
+            status: "server can't find NXDOMAIN".to_string(),
+            timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
+            remarks,
+        }),
+        Err(e) => Err(e),
+    }
 }
 
 #[tauri::command]

@@ -12,7 +12,7 @@ use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PingResult {
     pub target: Host,
-    pub ip: IpAddr,
+    pub ip: Option<IpAddr>,
     pub time_ms: Option<Rtt>,
     pub status: String,
     pub timestamp: String,
@@ -72,7 +72,7 @@ impl Pinger {
                 };
                 Ok(PingResult {
                     target: self.target.clone(),
-                    ip,
+                    ip: Some(ip),
                     time_ms: Some(Rtt::new(duration.as_secs_f64() * 1000.0)),
                     status: "OK".to_string(),
                     timestamp,
@@ -81,7 +81,7 @@ impl Pinger {
             }
             Err(e) => Ok(PingResult {
                 target: self.target.clone(),
-                ip: self.ip,
+                ip: Some(self.ip),
                 time_ms: None,
                 status: format!("NG ({})", e),
                 timestamp,
@@ -130,7 +130,7 @@ mod tests {
     fn test_ping_result_serialization() {
         let result = PingResult {
             target: Host::new("198.51.100.1").unwrap(),
-            ip: "198.51.100.1".parse().unwrap(),
+            ip: Some("198.51.100.1".parse().unwrap()),
             time_ms: Some(Rtt::new(12.34)),
             status: "OK".to_string(),
             timestamp: "2024/01/01 12:00:00".to_string(),

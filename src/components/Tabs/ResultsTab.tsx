@@ -52,7 +52,7 @@ const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: 
             </td>
             <td>{displayTimestamp}</td>
             <td>{res.target}</td>
-            <td>{res.ip}</td>
+            <td>{res.ip || "-"}</td>
             <td>{res.time_ms !== null ? `${res.time_ms.toFixed(2)} ms` : "-"}</td>
             <td className={styles.detailsCell} style={{ fontSize: tableSize === 'xsmall' ? '9px' : '12px' }}>
                 {displayStatusText}
