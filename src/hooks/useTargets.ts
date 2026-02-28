@@ -82,13 +82,21 @@ export const useTargets = () => {
             const file = e.dataTransfer.files[0];
             const reader = new FileReader();
             reader.onload = async (event) => {
-                const content = event.target?.result;
-                if (typeof content === 'string') {
+                const arrayBuffer = event.target?.result as ArrayBuffer;
+                if (arrayBuffer) {
+                    let content = '';
+                    try {
+                        const decoder = new TextDecoder('utf-8', { fatal: true });
+                        content = decoder.decode(arrayBuffer);
+                    } catch (err) {
+                        const decoder = new TextDecoder('shift_jis');
+                        content = decoder.decode(arrayBuffer);
+                    }
                     const { newTargets, invalidHosts } = await parseExPingContent(content);
                     applyParsedTargets(newTargets, invalidHosts);
                 }
             };
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
             return;
         }
 
@@ -108,12 +116,20 @@ export const useTargets = () => {
             const file = e.dataTransfer.files[0];
             const reader = new FileReader();
             reader.onload = (event) => {
-                const content = event.target?.result;
-                if (typeof content === 'string') {
+                const arrayBuffer = event.target?.result as ArrayBuffer;
+                if (arrayBuffer) {
+                    let content = '';
+                    try {
+                        const decoder = new TextDecoder('utf-8', { fatal: true });
+                        content = decoder.decode(arrayBuffer);
+                    } catch (err) {
+                        const decoder = new TextDecoder('shift_jis');
+                        content = decoder.decode(arrayBuffer);
+                    }
                     setExPingText(content);
                 }
             };
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
             return;
         }
 
