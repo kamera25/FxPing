@@ -12,11 +12,14 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "FxPing",
         "width": 800,
         "height": 600,
         "dragDropEnabled": false,
-        "devtools": false
+        "devtools": false,
+        "visible": false,
+        "backgroundColor": "#121212"
       }
     ],
     "security": {

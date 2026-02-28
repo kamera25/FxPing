@@ -113,6 +113,11 @@ fn read_file_bytes(path: String) -> Result<Vec<u8>, FxPingError> {
 }
 
 #[tauri::command]
+fn show_main_window(window: tauri::Window) {
+    window.show().unwrap();
+}
+
+#[tauri::command]
 fn is_admin() -> bool {
     #[cfg(windows)]
     {
@@ -152,7 +157,8 @@ pub fn run() {
             append_text_file,
             get_platform,
             read_file_bytes,
-            is_admin
+            is_admin,
+            show_main_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

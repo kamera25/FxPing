@@ -138,6 +138,14 @@ function App() {
   }, [initPlatform, setCurrentTime]);
 
   useEffect(() => {
+    // Show the window after the frontend has rendered to avoid white flash
+    // We use a custom Rust command to ensure direct access to window show logic
+    invoke("show_main_window").catch((err) => {
+      console.error("Failed to show window:", err);
+    });
+  }, []);
+
+  useEffect(() => {
     if (scrollRef.current && isAtBottom.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
