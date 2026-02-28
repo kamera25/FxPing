@@ -129,8 +129,8 @@ mod tests {
     #[test]
     fn test_ping_result_serialization() {
         let result = PingResult {
-            target: Host::new("8.8.8.8").unwrap(),
-            ip: "8.8.8.8".parse().unwrap(),
+            target: Host::new("198.51.100.1").unwrap(),
+            ip: "198.51.100.1".parse().unwrap(),
             time_ms: Some(Rtt::new(12.34)),
             status: "OK".to_string(),
             timestamp: "2024/01/01 12:00:00".to_string(),
@@ -138,7 +138,7 @@ mod tests {
         };
 
         let json = serde_json::to_string(&result).unwrap();
-        assert!(json.contains("\"target\":\"8.8.8.8\""));
+        assert!(json.contains("\"target\":\"198.51.100.1\""));
         assert!(json.contains("\"time_ms\":12.34"));
         assert!(json.contains("\"status\":\"OK\""));
     }

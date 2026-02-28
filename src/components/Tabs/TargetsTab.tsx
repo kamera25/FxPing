@@ -94,7 +94,7 @@ const TargetsTab: React.FC<TargetsTabProps> = ({
                         </div>
                         <textarea
                             className={styles.expingTextarea}
-                            placeholder="'監視対象 サーバ群&#10;localhost 自機 1&#10;8.8.8.8 Google_Public_DNS#1"
+                            placeholder="'監視対象 サーバ群&#10;localhost 自機 1&#10;198.51.100.1 Google_Public_DNS#1"
                             value={exPingText}
                             onChange={(e) => setExPingText(e.target.value)}
                             onDragOver={(e) => e.preventDefault()}

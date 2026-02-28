@@ -201,7 +201,10 @@ fn parse_line_to_hop(line: &str, target_host: &Host, resolve_hostnames: bool) ->
                 time_ms: None,
             });
         } else if parts.len() >= 3 {
-            let hop_ip_str = parts[1].to_string();
+            let mut hop_ip_str = parts[1].to_string();
+            if let Some(pos) = hop_ip_str.find('%') {
+                hop_ip_str.truncate(pos);
+            }
             let hop_ip = IpAddr::from_str(&hop_ip_str).ok();
             let mut time_ms = None;
             for i in 2..parts.len() {
@@ -251,11 +254,11 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn test_parse_line_to_hop() {
-        let target_host = Host::new("8.8.8.8").unwrap();
-        let line1 = "1  192.168.1.1  0.5 ms";
+        let target_host = Host::new("198.51.100.1").unwrap();
+        let line1 = "1  198.51.100.1  0.5 ms";
         let hop1 = parse_line_to_hop(line1, &target_host, true).unwrap();
         assert_eq!(hop1.ttl.value(), 1);
-        assert_eq!(hop1.ip, Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
+        assert_eq!(hop1.ip, Some(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 1))));
         assert_eq!(hop1.time_ms.map(|r| r.value()), Some(0.5));
 
         let line2 = "2  *";
@@ -263,10 +266,16 @@ mod tests {
         assert_eq!(hop2.ttl.value(), 2);
         assert_eq!(hop2.ip, None);
 
-        let line3 = "3  8.8.8.8  10.2 ms";
+        let line3 = "3  198.51.100.1  10.2 ms";
         let hop3 = parse_line_to_hop(line3, &target_host, true).unwrap();
         assert_eq!(hop3.ttl.value(), 3);
-        assert_eq!(hop3.ip, Some(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))));
+        assert_eq!(hop3.ip, Some(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 1))));
         assert_eq!(hop3.time_ms.map(|r| r.value()), Some(10.2));
+
+        let line4 = "4  2001:0DB8::1%en0  1.2 ms";
+        let hop4 = parse_line_to_hop(line4, &target_host, true).unwrap();
+        assert_eq!(hop4.ttl.value(), 4);
+        assert!(hop4.ip.is_some());
+        assert_eq!(hop4.ip.unwrap().to_string(), "2001:db8::1");
     }
 }

@@ -146,21 +146,21 @@ mod tests {
     #[test]
     fn test_trace_result_serialization() {
         let hop = TraceHop {
-            target: Host::new("8.8.8.8").unwrap(),
+            target: Host::new("198.51.100.1").unwrap(),
             ttl: Hop::new(1).unwrap(),
-            ip: Some("192.168.1.1".parse().unwrap()),
+            ip: Some("192.0.2.1".parse().unwrap()),
             fqdn: Some("router.local".to_string()),
             time_ms: Some(Rtt::new(1.23)),
         };
         let result = TraceResult {
-            target: Host::new("8.8.8.8").unwrap(),
+            target: Host::new("198.51.100.1").unwrap(),
             ping_ok: Some(true),
             hops: vec![hop],
             timestamp: "2024/01/01 12:00:00".to_string(),
         };
 
         let json = serde_json::to_string(&result).unwrap();
-        assert!(json.contains("\"target\":\"8.8.8.8\""));
+        assert!(json.contains("\"target\":\"198.51.100.1\""));
         assert!(json.contains("\"ttl\":1"));
         assert!(json.contains("\"fqdn\":\"router.local\""));
     }

@@ -20,7 +20,11 @@ impl Host {
         }
 
         // 2. Check if it's an IP address (IPv4 or IPv6)
-        if let Ok(_) = IpAddr::from_str(s) {
+        let mut check_s = s.to_string();
+        if let Some(pos) = check_s.find('%') {
+            check_s.truncate(pos);
+        }
+        if let Ok(_) = IpAddr::from_str(&check_s) {
             return Ok(Host(s.to_string()));
         }
 
@@ -101,8 +105,9 @@ mod tests {
     fn test_host_validation() {
         // Valid inputs
         assert!(Host::new("127.0.0.1").is_ok());
-        assert!(Host::new("8.8.8.8").is_ok());
+        assert!(Host::new("198.51.100.1").is_ok());
         assert!(Host::new("2001:db8::1").is_ok());
+        assert!(Host::new("2001:0DB8::1%en0").is_ok());
         assert!(Host::new("google.com").is_ok());
         assert!(Host::new("www.example.co.jp").is_ok());
         assert!(Host::new("localhost").is_ok());
