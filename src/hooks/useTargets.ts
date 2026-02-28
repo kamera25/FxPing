@@ -123,11 +123,29 @@ export const useTargets = () => {
         }
     };
 
+    const loadDefTargets = async () => {
+        try {
+            const content = await invoke<string | null>("load_def_targets");
+            if (content) {
+                const { newTargets, invalidHosts } = await parseExPingContent(content);
+                if (newTargets.length > 0) {
+                    setTargets(newTargets);
+                }
+                if (invalidHosts.length > 0) {
+                    console.warn("Some targets in ExPing.def were invalid:", invalidHosts);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load ExPing.def:", e);
+        }
+    };
+
     return {
         addTarget,
         removeTarget,
         handleExPingApply,
         handleTargetListDrop,
-        handleDrop
+        handleDrop,
+        loadDefTargets
     };
 };

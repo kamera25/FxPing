@@ -76,6 +76,20 @@ pub struct TargetData {
 }
 
 #[tauri::command]
+async fn load_def_targets() -> Result<Option<String>, FxPingError> {
+    let exe_path = std::env::current_exe()?;
+    let dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
+    let def_path = dir.join("ExPing.def");
+
+    if def_path.exists() {
+        let content = std::fs::read_to_string(def_path)?;
+        Ok(Some(content))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
 async fn save_targets(targets: Vec<TargetData>) -> Result<(), FxPingError> {
     // 実行時パス (Executable path)
     let exe_path = std::env::current_exe()?;
@@ -249,7 +263,8 @@ pub fn run() {
             read_file_bytes,
             is_admin,
             show_main_window,
-            launch_external_program
+            launch_external_program,
+            load_def_targets
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

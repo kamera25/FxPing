@@ -58,9 +58,13 @@ function App() {
   } = useStore();
 
   const { selectFile, selectDir, playSound, initPlatform } = useSettings();
-  const { addTarget, removeTarget, handleExPingApply, handleTargetListDrop, handleDrop } = useTargets();
+  const { addTarget, removeTarget, handleExPingApply, handleTargetListDrop, handleDrop, loadDefTargets } = useTargets();
   const { runTraceRoute, handleProtocolChange } = usePingEngine();
   useAutoSave();
+
+  useEffect(() => {
+    loadDefTargets();
+  }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isAtBottom = useRef(true);
