@@ -1,5 +1,7 @@
 use crate::tcpip::hop::Hop;
+use crate::tcpip::host::Host;
 use crate::tcpip::payload_size::PayloadSize;
+use crate::tcpip::rtt::Rtt;
 use crate::tcpip::timeout::Timeout;
 use crate::FxPingError;
 use chrono::Local;
@@ -9,16 +11,16 @@ use surge_ping::{Client, Config, PingIdentifier, PingSequence, ICMP};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PingResult {
-    pub target: String,
+    pub target: Host,
     pub ip: IpAddr,
-    pub time_ms: Option<f64>,
+    pub time_ms: Option<Rtt>,
     pub status: String,
     pub timestamp: String,
     pub remarks: String,
 }
 
 pub struct Pinger {
-    target: String,
+    target: Host,
     ip: IpAddr,
     timeout: Timeout,
     payload_size: PayloadSize,
@@ -27,17 +29,12 @@ pub struct Pinger {
 
 impl Pinger {
     pub async fn new(
-        target: String,
-        timeout_ms: u64,
-        payload_size: usize,
-        ttl: u32,
+        target: Host,
+        timeout: Timeout,
+        payload_size: PayloadSize,
+        ttl: Hop,
     ) -> Result<Self, FxPingError> {
-        let payload_size = PayloadSize::new(payload_size)?;
-        let timeout = Timeout::new(timeout_ms)?;
-        let ttl = Hop::new(ttl)?;
-        let host = crate::tcpip::host::Host::new(&target)?;
-        let target_str = host.to_string();
-        let ip = crate::resolve::resolve_host(&target_str)?;
+        let ip = crate::resolve::resolve_host(&target.to_string())?;
 
         Ok(Self {
             target,
@@ -76,7 +73,7 @@ impl Pinger {
                 Ok(PingResult {
                     target: self.target.clone(),
                     ip,
-                    time_ms: Some(duration.as_secs_f64() * 1000.0),
+                    time_ms: Some(Rtt::new(duration.as_secs_f64() * 1000.0)),
                     status: "OK".to_string(),
                     timestamp,
                     remarks,
@@ -101,7 +98,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_pinger_new_valid_ip() {
-        let pinger = Pinger::new("127.0.0.1".to_string(), 1000, 32, 64).await;
+        let target = Host::new("127.0.0.1").unwrap();
+        let timeout = Timeout::new(1000).unwrap();
+        let payload_size = PayloadSize::new(32).unwrap();
+        let ttl = Hop::new(64).unwrap();
+        let pinger = Pinger::new(target, timeout, payload_size, ttl).await;
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
@@ -112,7 +113,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_pinger_new_valid_ipv6() {
-        let pinger = Pinger::new("::1".to_string(), 1000, 32, 64).await;
+        let target = Host::new("::1").unwrap();
+        let timeout = Timeout::new(1000).unwrap();
+        let payload_size = PayloadSize::new(32).unwrap();
+        let ttl = Hop::new(64).unwrap();
+        let pinger = Pinger::new(target, timeout, payload_size, ttl).await;
         assert!(pinger.is_ok());
         let pinger = pinger.unwrap();
         assert_eq!(pinger.ip, "::1".parse::<IpAddr>().unwrap());
@@ -121,18 +126,12 @@ mod tests {
         assert_eq!(pinger.ttl.value(), 64);
     }
 
-    #[tokio::test]
-    async fn test_pinger_new_invalid_target() {
-        let pinger = Pinger::new("invalid...host".to_string(), 1000, 32, 64).await;
-        assert!(pinger.is_err());
-    }
-
     #[test]
     fn test_ping_result_serialization() {
         let result = PingResult {
-            target: "8.8.8.8".to_string(),
+            target: Host::new("8.8.8.8").unwrap(),
             ip: "8.8.8.8".parse().unwrap(),
-            time_ms: Some(12.34),
+            time_ms: Some(Rtt::new(12.34)),
             status: "OK".to_string(),
             timestamp: "2024/01/01 12:00:00".to_string(),
             remarks: "test".to_string(),

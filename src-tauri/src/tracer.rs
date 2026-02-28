@@ -4,6 +4,8 @@ mod udp;
 use crate::tcpip::hop::Hop;
 use crate::tcpip::host::Host;
 use crate::tcpip::payload_size::PayloadSize;
+use crate::tcpip::protocol::Protocol;
+use crate::tcpip::rtt::Rtt;
 use crate::tcpip::timeout::Timeout;
 use chrono::Local;
 use icmp::ICMPTracer;
@@ -16,16 +18,16 @@ use udp::UDPTracer;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceHop {
-    pub target: String,
-    pub ttl: u32,
+    pub target: Host,
+    pub ttl: Hop,
     pub ip: Option<IpAddr>,
     pub fqdn: Option<String>,
-    pub time_ms: Option<f64>,
+    pub time_ms: Option<Rtt>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TraceResult {
-    pub target: String,
+    pub target: Host,
     pub ping_ok: Option<bool>,
     pub hops: Vec<TraceHop>,
     pub timestamp: String,
@@ -41,7 +43,7 @@ pub trait TracerImpl: Send + Sync {
 }
 
 pub struct Tracer {
-    target: String,
+    target: Host,
     ip: IpAddr,
     timeout: Timeout,
     payload_size: PayloadSize,
@@ -50,20 +52,16 @@ pub struct Tracer {
 
 impl Tracer {
     pub async fn new(
-        target: String,
-        timeout_ms: u64,
-        payload_size: usize,
+        target: Host,
+        timeout: Timeout,
+        payload_size: PayloadSize,
         max_hops: Hop,
-        protocol: String,
+        protocol: Protocol,
         resolve_hostnames: bool,
     ) -> Result<Self, FxPingError> {
-        let payload_size = PayloadSize::new(payload_size)?;
-        let timeout = Timeout::new(timeout_ms)?;
-        let host = Host::new(&target)?;
-        let target_str = host.to_string();
-        let ip = crate::resolve::resolve_host(&target_str)?;
+        let ip = crate::resolve::resolve_host(&target.to_string())?;
 
-        let inner: Box<dyn TracerImpl> = if protocol == "ICMP" {
+        let inner: Box<dyn TracerImpl> = if protocol == Protocol::ICMP {
             Box::new(ICMPTracer::new(
                 ip,
                 timeout,
@@ -113,7 +111,7 @@ impl Tracer {
         let _ = app.emit(
             "trace-ping",
             serde_json::json!({
-                "target": self.target.clone(),
+                "target": self.target.to_string(),
                 "ping_ok": ping_ok,
             }),
         );
@@ -135,47 +133,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_tracer_new_valid() {
+        let target = Host::new("127.0.0.1").unwrap();
+        let timeout = Timeout::new(1000).unwrap();
+        let payload_size = PayloadSize::new(32).unwrap();
         let hops = Hop::new(30).unwrap();
-        let tracer = Tracer::new(
-            "127.0.0.1".to_string(),
-            1000,
-            32,
-            hops,
-            "ICMP".to_string(),
-            true,
-        )
-        .await;
+        let tracer = Tracer::new(target, timeout, payload_size, hops, Protocol::ICMP, true).await;
         assert!(tracer.is_ok());
         let tracer = tracer.unwrap();
         assert_eq!(tracer.ip, "127.0.0.1".parse::<IpAddr>().unwrap());
     }
 
-    #[tokio::test]
-    async fn test_tracer_new_invalid_host() {
-        let hops = Hop::new(30).unwrap();
-        let tracer = Tracer::new(
-            "invalid...host".to_string(),
-            1000,
-            32,
-            hops,
-            "ICMP".to_string(),
-            true,
-        )
-        .await;
-        assert!(tracer.is_err());
-    }
-
     #[test]
     fn test_trace_result_serialization() {
         let hop = TraceHop {
-            target: "8.8.8.8".to_string(),
-            ttl: 1,
+            target: Host::new("8.8.8.8").unwrap(),
+            ttl: Hop::new(1).unwrap(),
             ip: Some("192.168.1.1".parse().unwrap()),
             fqdn: Some("router.local".to_string()),
-            time_ms: Some(1.23),
+            time_ms: Some(Rtt::new(1.23)),
         };
         let result = TraceResult {
-            target: "8.8.8.8".to_string(),
+            target: Host::new("8.8.8.8").unwrap(),
             ping_ok: Some(true),
             hops: vec![hop],
             timestamp: "2024/01/01 12:00:00".to_string(),

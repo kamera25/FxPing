@@ -2,6 +2,7 @@ use crate::FxPingError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[serde(transparent)]
 pub struct PayloadSize(u16);
 
 impl PayloadSize {

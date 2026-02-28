@@ -4,6 +4,7 @@ use std::net::IpAddr;
 use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(transparent)]
 pub struct Host(String);
 
 impl Host {
@@ -86,9 +87,9 @@ impl FromStr for Host {
     }
 }
 
-impl ToString for Host {
-    fn to_string(&self) -> String {
-        self.0.clone()
+impl std::fmt::Display for Host {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

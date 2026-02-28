@@ -8,10 +8,13 @@ mod resolve;
 mod tcpip;
 mod tracer;
 
+use crate::tcpip::hop::Hop;
+use crate::tcpip::host::Host;
+use crate::tcpip::payload_size::PayloadSize;
+use crate::tcpip::protocol::Protocol;
+use crate::tcpip::timeout::Timeout;
 pub use error::FxPingError;
 use pinger::{PingResult, Pinger};
-use tcpip::hop::Hop;
-use tcpip::host::Host;
 use tracer::Tracer;
 
 // --- Security Policy ---
@@ -23,11 +26,11 @@ use tracer::Tracer;
 
 #[tauri::command]
 async fn ping_target(
-    target: String,
+    target: Host,
     remarks: String,
-    timeout_ms: u64,
-    payload_size: usize,
-    ttl: u32,
+    timeout_ms: Timeout,
+    payload_size: PayloadSize,
+    ttl: Hop,
 ) -> Result<PingResult, FxPingError> {
     let pinger = Pinger::new(target, timeout_ms, payload_size, ttl).await?;
     pinger.ping(remarks).await
@@ -36,19 +39,18 @@ async fn ping_target(
 #[tauri::command]
 async fn traceroute_target(
     app: tauri::AppHandle,
-    target: String,
-    timeout_ms: u64,
-    payload_size: usize,
-    max_hops: u32,
+    target: Host,
+    timeout_ms: Timeout,
+    payload_size: PayloadSize,
+    max_hops: Hop,
     resolve_hostnames: bool,
-    protocol: String,
+    protocol: Protocol,
 ) -> Result<tracer::TraceResult, FxPingError> {
-    let hops = Hop::new(max_hops)?;
     let tracer = Tracer::new(
         target,
         timeout_ms,
         payload_size,
-        hops,
+        max_hops,
         protocol,
         resolve_hostnames,
     )
@@ -57,8 +59,8 @@ async fn traceroute_target(
 }
 
 #[tauri::command]
-fn validate_host(host: String) -> Result<(), FxPingError> {
-    Host::new(&host).map(|_| ())
+fn validate_host(_host: Host) -> Result<(), FxPingError> {
+    Ok(())
 }
 
 #[tauri::command]
@@ -68,7 +70,7 @@ fn get_platform() -> String {
 
 #[derive(Debug, Deserialize)]
 pub struct TargetData {
-    pub host: String,
+    pub host: Host,
     pub remarks: String,
 }
 

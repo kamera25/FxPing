@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './Header.module.css';
+import logoIcon from '../assets/icon.png';
 
 interface HeaderProps {
     showSettings: boolean;
@@ -10,7 +11,7 @@ const Header: React.FC<HeaderProps> = ({ showSettings, setShowSettings }) => {
     return (
         <header className={styles.header}>
             <div className={styles.logo}>
-                <img src="/icon.png" alt="FxPing Logo" className={styles.logoIcon} />
+                <img src={logoIcon} alt="FxPing Logo" className={styles.logoIcon} />
                 FxPing
             </div>
             <button

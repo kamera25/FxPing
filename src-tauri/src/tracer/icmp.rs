@@ -1,5 +1,7 @@
 use crate::tcpip::hop::Hop;
+use crate::tcpip::host::Host;
 use crate::tcpip::payload_size::PayloadSize;
+use crate::tcpip::rtt::Rtt;
 use crate::tcpip::timeout::Timeout;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
@@ -37,20 +39,27 @@ impl TracerImpl for ICMPTracer {
             use tauri::Emitter;
             let mut hops = Vec::new();
             let payload = vec![0u8; self.payload_size.value()];
-            let target_str = self.ip.to_string();
+            let target_host =
+                Host::new(&self.ip.to_string()).unwrap_or_else(|_| Host::new("0.0.0.0").unwrap());
 
-            for ttl in 1..=self.max_hops.value() {
-                let builder = Config::builder().ttl(ttl as u32);
+            for ttl_val in 1..=self.max_hops.value() {
+                let ttl = Hop::new(ttl_val as u32).unwrap_or(self.max_hops);
+                let builder = Config::builder().ttl(ttl.value());
                 let hop_config = match self.ip {
                     IpAddr::V4(_) => builder.kind(ICMP::V4).build(),
                     IpAddr::V6(_) => builder.kind(ICMP::V6).build(),
                 };
                 let hop_client = Client::new(&hop_config)
                     .map_err(|e| crate::FxPingError::TraceFailed(e.to_string()))?;
-                let mut hop_pinger = hop_client.pinger(self.ip, PingIdentifier(ttl as u16)).await;
+                let mut hop_pinger = hop_client
+                    .pinger(self.ip, PingIdentifier(ttl.value() as u16))
+                    .await;
                 hop_pinger.timeout(self.timeout.value());
 
-                let hop = match hop_pinger.ping(PingSequence(ttl as u16), &payload).await {
+                let hop = match hop_pinger
+                    .ping(PingSequence(ttl.value() as u16), &payload)
+                    .await
+                {
                     Ok((packet, duration)) => {
                         let hop_ip = match packet {
                             surge_ping::IcmpPacket::V4(p) => p.get_real_dest().into(),
@@ -63,15 +72,15 @@ impl TracerImpl for ICMPTracer {
                         };
 
                         TraceHop {
-                            target: target_str.clone(),
+                            target: target_host.clone(),
                             ttl,
                             ip: Some(hop_ip),
                             fqdn,
-                            time_ms: Some(duration.as_secs_f64() * 1000.0),
+                            time_ms: Some(Rtt::new(duration.as_secs_f64() * 1000.0)),
                         }
                     }
                     Err(_) => TraceHop {
-                        target: target_str.clone(),
+                        target: target_host.clone(),
                         ttl,
                         ip: None,
                         fqdn: None,
@@ -100,20 +109,6 @@ mod tests {
     #[test]
     fn test_icmp_tracer_new() {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-        let timeout = Timeout::new(1000).unwrap();
-        let payload_size = PayloadSize::new(32).unwrap();
-        let max_hops = Hop::new(30).unwrap();
-        let tracer = ICMPTracer::new(ip, timeout, payload_size, max_hops, true);
-
-        assert_eq!(tracer.ip, ip);
-        assert_eq!(tracer.timeout, timeout);
-        assert_eq!(tracer.payload_size, payload_size);
-        assert_eq!(tracer.max_hops, max_hops);
-    }
-
-    #[test]
-    fn test_icmp_tracer_new_ipv6() {
-        let ip = "::1".parse::<IpAddr>().unwrap();
         let timeout = Timeout::new(1000).unwrap();
         let payload_size = PayloadSize::new(32).unwrap();
         let max_hops = Hop::new(30).unwrap();

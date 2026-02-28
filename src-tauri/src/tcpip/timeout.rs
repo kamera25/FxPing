@@ -2,8 +2,19 @@ use crate::FxPingError;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub struct Timeout(Duration);
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
+#[serde(transparent)]
+pub struct Timeout(std::time::Duration);
+
+impl<'de> serde::Deserialize<'de> for Timeout {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let ms = u64::deserialize(deserializer)?;
+        Timeout::new(ms).map_err(serde::de::Error::custom)
+    }
+}
 
 impl Timeout {
     pub fn new(ms: u64) -> Result<Self, FxPingError> {
