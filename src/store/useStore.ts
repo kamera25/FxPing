@@ -146,7 +146,7 @@ export const useStore = create<AppState>((set) => ({
         resolveHostnames: true,
         ng: {
             changeTrayIcon: true,
-            showPopup: true,
+            showPopup: false,
             playSound: false,
             soundFile: "",
             launchProgram: false,
@@ -158,7 +158,7 @@ export const useStore = create<AppState>((set) => ({
             onceOnly: false,
             notIfPreviousNg: true,
             notUntilCountReached: true,
-            countToNotify: 3,
+            countToNotify: 1,
             countConsecutiveOnly: true,
             notifyOnIntervalOnly: false,
         },

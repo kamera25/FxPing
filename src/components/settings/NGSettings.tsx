@@ -83,8 +83,8 @@ const NGSettings: React.FC<NGSettingsProps> = ({
                 一度通知したアドレスは2回目以降通知しない
             </label>
 
-            <label className={styles.checkboxLabel} style={{ opacity: 0.5 }}>
-                <input type="checkbox" checked={settings.ng.notIfPreviousNg} disabled onChange={e => setSettings({ ...settings, ng: { ...settings.ng, notIfPreviousNg: e.target.checked } })} />
+            <label className={styles.checkboxLabel} style={{ opacity: settings.ng.onceOnly ? 0.5 : 1 }}>
+                <input type="checkbox" checked={settings.ng.notIfPreviousNg} disabled={settings.ng.onceOnly} onChange={e => setSettings({ ...settings, ng: { ...settings.ng, notIfPreviousNg: e.target.checked } })} />
                 前回もNGだった場合は通知しない
             </label>
 

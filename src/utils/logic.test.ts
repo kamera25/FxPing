@@ -208,6 +208,75 @@ describe('logic.ts', () => {
             expect(nextStats["198.51.100.1"].consecutiveCount).toBe(0);
             expect(nextStats["198.51.100.1"].alerted).toBe(false);
         });
+
+        it('should trigger repeated alerts when onceOnly is false and notIfPreviousNg is false', () => {
+            const settings = {
+                ng: {
+                    showPopup: true,
+                    notUntilCountReached: true,
+                    countToNotify: 1,
+                    onceOnly: false,
+                    notIfPreviousNg: false
+                }
+            } as Settings;
+            const prevNgStats = { "198.51.100.1": { consecutiveCount: 1, alerted: true } };
+            const results: PingResult[] = [{
+                status: "Timeout",
+                timestamp: "...",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: null,
+                remarks: ""
+            }];
+            const { alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
+            expect(alertToTrigger).not.toBeNull();
+        });
+
+        it('should NOT trigger repeated alerts when onceOnly is false and notIfPreviousNg is true', () => {
+            const settings = {
+                ng: {
+                    showPopup: true,
+                    notUntilCountReached: true,
+                    countToNotify: 1,
+                    onceOnly: false,
+                    notIfPreviousNg: true
+                }
+            } as Settings;
+            const prevNgStats = { "198.51.100.1": { consecutiveCount: 1, alerted: true } };
+            const results: PingResult[] = [{
+                status: "Timeout",
+                timestamp: "...",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: null,
+                remarks: ""
+            }];
+            const { alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
+            expect(alertToTrigger).toBeNull();
+        });
+
+        it('should NOT trigger repeated alerts when onceOnly is true', () => {
+            const settings = {
+                ng: {
+                    showPopup: true,
+                    notUntilCountReached: true,
+                    countToNotify: 1,
+                    onceOnly: true,
+                    notIfPreviousNg: false
+                }
+            } as Settings;
+            const prevNgStats = { "198.51.100.1": { consecutiveCount: 1, alerted: true } };
+            const results: PingResult[] = [{
+                status: "Timeout",
+                timestamp: "...",
+                target: "198.51.100.1",
+                ip: "198.51.100.1",
+                time_ms: null,
+                remarks: ""
+            }];
+            const { alertToTrigger } = checkNgConditions(prevNgStats, results, settings);
+            expect(alertToTrigger).toBeNull();
+        });
     });
 
     describe('formatPingResultsCsvRows', () => {

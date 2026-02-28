@@ -149,11 +149,15 @@ export function checkNgConditions(
             const threshold = settings.ng.notUntilCountReached ? settings.ng.countToNotify : 1;
             let shouldTrigger = false;
 
-            if (nextConsecutive === threshold) {
+            if (nextConsecutive >= threshold) {
                 shouldTrigger = true;
             }
 
             if (settings.ng.onceOnly && nextAlerted) {
+                shouldTrigger = false;
+            }
+
+            if (!settings.ng.onceOnly && settings.ng.notIfPreviousNg && current.consecutiveCount >= threshold) {
                 shouldTrigger = false;
             }
 
