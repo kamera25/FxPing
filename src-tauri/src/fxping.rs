@@ -164,21 +164,8 @@ async fn launch_external_program(
 
 #[tauri::command]
 fn play_sound_native(path: String) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        tauri::async_runtime::spawn(async move {
-            let _ = tokio::process::Command::new("afplay")
-                .arg(&path)
-                .status()
-                .await;
-        });
-        return true;
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = path;
-        return false;
-    }
+    let _ = path;
+    return false;
 }
 
 #[tauri::command]
