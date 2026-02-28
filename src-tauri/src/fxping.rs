@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
+use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
 
 mod error;
 mod pinger;
@@ -143,9 +144,55 @@ fn is_admin() -> bool {
     }
 }
 
+fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let products_menu = Submenu::with_id_and_items(
+        app,
+        "product",
+        "FxPing",
+        true,
+        &[
+            &PredefinedMenuItem::about(app, Some("FxPingについて"), None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::services(app, Some("サービス"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::hide(app, Some("FxPingを隠す"))?,
+            &PredefinedMenuItem::hide_others(app, Some("ほかを隠す"))?,
+            &PredefinedMenuItem::show_all(app, Some("すべてを表示"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::quit(app, Some("FxPingを終了"))?,
+        ],
+    )?;
+
+    let edit_menu = Submenu::with_id_and_items(
+        app,
+        "edit",
+        "編集",
+        true,
+        &[
+            &PredefinedMenuItem::undo(app, Some("元に戻す"))?,
+            &PredefinedMenuItem::redo(app, Some("やり直し"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, Some("切り取り"))?,
+            &PredefinedMenuItem::copy(app, Some("コピー"))?,
+            &PredefinedMenuItem::paste(app, Some("貼り付け"))?,
+            &PredefinedMenuItem::select_all(app, Some("すべて選択"))?,
+        ],
+    )?;
+
+    let menu = Menu::with_items(app, &[&products_menu, &edit_menu])?;
+
+    app.set_menu(menu)?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            setup_menu(app)?;
+            Ok(())
+        })
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
