@@ -39,6 +39,7 @@
       "icons/icon.ico"
     ],
     "macOS": {
+      "entitlements": "./FxPing.entitlements",
       "dmg": {
         "background": null,
         "windowPosition": {
