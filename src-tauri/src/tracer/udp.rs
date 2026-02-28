@@ -95,11 +95,25 @@ impl TracerImpl for UDPTracer {
                         return Err(crate::FxPingError::TraceFailed(format!("Failed to set read timeout on RAW socket: {}", e)));
                     }
                     
-                    let bind_addr = if ip.is_ipv4() {
+                    let dummy_socket = match std::net::UdpSocket::bind(if ip.is_ipv4() {
                         SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0)
                     } else {
                         SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 0)
+                    }) {
+                        Ok(s) => s,
+                        Err(e) => return Err(crate::FxPingError::TraceFailed(format!("Failed to bind dummy socket: {}", e))),
                     };
+                    
+                    if let Err(e) = dummy_socket.connect(SocketAddr::new(ip, 53)) {
+                        return Err(crate::FxPingError::TraceFailed(format!("Failed to connect dummy socket: {}", e)));
+                    }
+                    
+                    let local_ip = match dummy_socket.local_addr() {
+                        Ok(addr) => addr.ip(),
+                        Err(e) => return Err(crate::FxPingError::TraceFailed(format!("Failed to get local address: {}", e))),
+                    };
+
+                    let bind_addr = SocketAddr::new(local_ip, 0);
                     if let Err(e) = recv_socket.bind(&bind_addr.into()) {
                         return Err(crate::FxPingError::TraceFailed(format!("Failed to bind RAW socket: {}", e)));
                     }
@@ -150,6 +164,7 @@ impl TracerImpl for UDPTracer {
                                     if start_time.elapsed() >= timeout {
                                         break;
                                     }
+                                    std::thread::sleep(std::time::Duration::from_millis(10));
                                 }
                             }
                         }
