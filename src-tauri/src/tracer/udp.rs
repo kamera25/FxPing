@@ -38,8 +38,8 @@ impl TracerImpl for UDPTracer {
                 let timeout_secs = (self.timeout.as_millis() / 1000).max(1);
 
                 let cmd = match self.ip {
-                    IpAddr::V4(_) => "traceroute",
-                    IpAddr::V6(_) => "traceroute6",
+                    IpAddr::V4(_) => "/usr/sbin/traceroute",
+                    IpAddr::V6(_) => "/usr/sbin/traceroute6",
                 };
 
                 let mut child = tokio::process::Command::new(cmd)

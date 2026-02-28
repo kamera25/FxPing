@@ -8,6 +8,23 @@
   "permissions": [
     "core:default",
     "core:window:allow-show",
-    "dialog:default"
+    "dialog:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "traceroute",
+          "cmd": "/usr/sbin/traceroute",
+          "args": true
+        },
+        {
+          "name": "traceroute6",
+          "cmd": "/usr/sbin/traceroute6",
+          "args": true
+        }
+      ]
+    },
+    "shell:default",
+    "fs:default"
   ]
 }
