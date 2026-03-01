@@ -12,12 +12,13 @@ const StatsBar: React.FC = () => {
     const { currentTime } = useUIStore();
 
     const targetCount = targets.length;
+    const enabledCount = targets.filter(t => t.isEnabled !== false).length;
     const resultCount = results.length;
     const showCountdown = nextPingTimeMs !== null;
 
     return (
         <div className={styles.statsBar}>
-            <div>対象数: {targetCount}</div>
+            <div>対象数: {enabledCount} / {targetCount}</div>
             <div>パケット合計: {resultCount}</div>
             {showCountdown && (
                 <div className={styles.countdown}>
