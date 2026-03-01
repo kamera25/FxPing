@@ -7,7 +7,8 @@ import {
     formatPingResultsCsvRows,
     formatStatsCsvRows,
     formatTraceResultsText,
-    isValidHost
+    isValidHost,
+    expandCidr
 } from './logic';
 import { PingResult, Target, TargetStats, Settings, TraceResult } from '../types';
 
@@ -55,6 +56,70 @@ describe('logic.ts', () => {
             expect(isValidHost("host_name")).toBe(false);
             expect(isValidHost("")).toBe(false);
             expect(isValidHost(" ")).toBe(false);
+        });
+
+        it('should validate valid IPv4 CIDR', () => {
+            expect(isValidHost("192.168.1.0/24")).toBe(true);
+            expect(isValidHost("10.0.0.1/32")).toBe(true);
+            expect(isValidHost("172.16.0.0/16")).toBe(true);
+        });
+
+        it('should invalidate invalid CIDR formats', () => {
+            expect(isValidHost("192.168.1.0/33")).toBe(false);
+            expect(isValidHost("192.168.1.256/24")).toBe(false);
+            expect(isValidHost("abc/24")).toBe(false);
+            expect(isValidHost("192.168.1.0/")).toBe(false);
+            // Prefix too small (large range)
+            expect(isValidHost("10.0.0.0/8")).toBe(false); // 2^24 > 65536
+            expect(isValidHost("0.0.0.0/0")).toBe(false); // 2^32 > 65536
+        });
+    });
+
+    describe('expandCidr', () => {
+        it('should expand /32 to a single IP', () => {
+            const result = expandCidr("192.168.1.1/32");
+            expect(result).toEqual(["192.168.1.1"]);
+        });
+
+        it('should expand /31 to two IPs', () => {
+            const result = expandCidr("192.168.1.0/31");
+            expect(result).toEqual(["192.168.1.0", "192.168.1.1"]);
+        });
+
+        it('should expand /24 to 256 IPs', () => {
+            const result = expandCidr("192.168.1.0/24");
+            expect(result).toHaveLength(256);
+            expect(result?.[0]).toBe("192.168.1.0");
+            expect(result?.[255]).toBe("192.168.1.255");
+        });
+
+        it('should expand /16 up to 65536 IPs', () => {
+            const result = expandCidr("172.16.0.0/16");
+            expect(result).toHaveLength(65536);
+            expect(result?.[0]).toBe("172.16.0.0");
+            expect(result?.[65535]).toBe("172.16.255.255");
+        });
+
+        it('should return null for prefix < 16 (too many hosts)', () => {
+            const result = expandCidr("10.0.0.0/15");
+            expect(result).toBeNull();
+        });
+
+        it('should return null for invalid CIDR prefix', () => {
+            expect(expandCidr("192.168.1.1/33")).toBeNull();
+            expect(expandCidr("192.168.1.1/-1")).toBeNull();
+        });
+
+        it('should return null for malformed IP', () => {
+            expect(expandCidr("192.168.1/24")).toBeNull();
+            expect(expandCidr("abc.def.ghi.jkl/24")).toBeNull();
+        });
+
+        it('should handle network boundary correctly', () => {
+            // 192.168.1.5/24 -> network is 192.168.1.0
+            const result = expandCidr("192.168.1.5/24");
+            expect(result?.[0]).toBe("192.168.1.0");
+            expect(result).toHaveLength(256);
         });
     });
 
