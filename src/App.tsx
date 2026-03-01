@@ -41,7 +41,7 @@ import { useAutoSave } from "./hooks/useAutoSave";
 function App() {
   const { activeTab, setCurrentTime } = useUIStore();
   const { targets } = useTargetStore();
-  const { results, targetStats, isRunActive } = usePingStore();
+  const { results, targetStats } = usePingStore();
   const { traceResults, setTraceResults } = useTraceStore();
   const { showSettings } = useSettingsStore();
 

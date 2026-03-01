@@ -98,3 +98,5 @@ export interface Settings {
 }
 
 export type TableSize = 'xsmall' | 'small' | 'medium' | 'large';
+
+export type PingStatus = 'idle' | 'running' | 'waiting';

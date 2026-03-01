@@ -6,9 +6,11 @@ import { useUIStore } from "../store/uiStore";
 import { formatPingResultsCsvRows } from "../utils/logic";
 
 export const useAutoSave = () => {
-    const { results, isRunActive } = usePingStore();
+    const { results, status } = usePingStore();
     const { settings } = useSettingsStore();
     const { platform, currentTime } = useUIStore();
+
+    const isRunActive = status !== 'idle';
 
     const lastSavedIndexRef = useRef(0);
     const lastSavedPathRef = useRef<string | null>(null);

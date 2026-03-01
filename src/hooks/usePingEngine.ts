@@ -10,14 +10,15 @@ import { useNgDetection } from "./useNgDetection";
 import { useOkDetection } from "./useOkDetection";
 
 export const usePingEngine = () => {
-    const { setResults, setTargetStats, isPinging, setIsPinging, isRunActive, setIsRunActive, setNextPingTimeMs } = usePingStore();
+    const { setResults, setTargetStats, status, setStatus, setNextPingTimeMs, stopPing, startPing, pausePing } = usePingStore();
     const { targets } = useTargetStore();
     const { settings } = useSettingsStore();
 
     const { handleNgDetection } = useNgDetection();
     const { handleOkDetection } = useOkDetection();
 
-
+    const isPinging = status === 'running';
+    const isWaiting = status === 'waiting';
 
     useEffect(() => {
         let interval: number | undefined;
@@ -42,15 +43,21 @@ export const usePingEngine = () => {
                 if (settings.repeatCount > 0) {
                     if (settings.repeatMode === 'sequential') {
                         if (currentTargetIndex >= targets.length) {
-                            setIsPinging(false);
-                            if (!settings.periodicExecution) setIsRunActive(false);
+                            if (settings.periodicExecution) {
+                                pausePing();
+                            } else {
+                                stopPing();
+                            }
                             isExecuting = false;
                             return;
                         }
                     } else {
                         if (currentIteration >= settings.repeatCount) {
-                            setIsPinging(false);
-                            if (!settings.periodicExecution) setIsRunActive(false);
+                            if (settings.periodicExecution) {
+                                pausePing();
+                            } else {
+                                stopPing();
+                            }
                             isExecuting = false;
                             return;
                         }
@@ -128,18 +135,18 @@ export const usePingEngine = () => {
         } else {
             setNextPingTimeMs(null);
         }
-    }, [isPinging, targets, settings, setIsPinging, setIsRunActive, setResults, setTargetStats, setNextPingTimeMs, handleNgDetection, handleOkDetection]);
+    }, [isPinging, targets, settings, stopPing, pausePing, setResults, setTargetStats, setNextPingTimeMs, handleNgDetection, handleOkDetection]);
 
     useEffect(() => {
         let periodicTimer: number | undefined;
         let countdownTimer: number | undefined;
 
-        if (settings.periodicExecution && !isPinging && isRunActive) {
+        if (settings.periodicExecution && isWaiting) {
             const startTime = Date.now();
             const waitMs = settings.periodicInterval * 1000;
 
             periodicTimer = window.setTimeout(() => {
-                setIsPinging(true);
+                startPing();
             }, waitMs);
 
             countdownTimer = window.setInterval(() => {
@@ -154,7 +161,7 @@ export const usePingEngine = () => {
             clearTimeout(periodicTimer);
             clearInterval(countdownTimer);
         };
-    }, [settings.periodicExecution, settings.periodicInterval, isPinging, isRunActive, setIsPinging, setNextPingTimeMs]);
+    }, [settings.periodicExecution, settings.periodicInterval, isWaiting, startPing, setNextPingTimeMs]);
 
     return {};
 };

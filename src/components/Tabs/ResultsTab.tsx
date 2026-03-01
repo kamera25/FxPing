@@ -73,8 +73,10 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
     scrollRef,
     handleScroll,
 }) => {
-    const { results, setResults, setTargetStats, isRunActive, setIsRunActive, setIsPinging } = usePingStore();
+    const { results, setResults, setTargetStats, status, startPing, stopPing } = usePingStore();
     const { tableSize, setTableSize } = useUIStore();
+
+    const isRunActive = status !== 'idle';
 
     const sizeClass = tableSize === 'xsmall' ? styles.tableXsmall :
         tableSize === 'medium' ? styles.tableMedium :
@@ -85,9 +87,11 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
             <div className={styles.toolbar}>
                 <button
                     onClick={() => {
-                        const next = !isRunActive;
-                        setIsRunActive(next);
-                        setIsPinging(next);
+                        if (isRunActive) {
+                            stopPing();
+                        } else {
+                            startPing();
+                        }
                     }}
                     className={isRunActive ? styles.btnStop : styles.btnStart}
                 >
