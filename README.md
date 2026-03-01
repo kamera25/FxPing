@@ -19,6 +19,15 @@ FxPing は、ExPing の精神を受け継ぎつつ、モダンなクロスプラ
 - **UIサイズ切替** — 大・中・小のUIサイズから選択可能
 - **IPv4 / IPv6 対応** — デュアルスタック環境に対応
 
+## 📦 使い方
+
+- リリース版は、[リリース](https://github.com/kamera25/fxping/releases)からダウンロードしてください。
+- [使い方](assets/howtouse.md) をご参照ください。
+
+---
+
+# 開発者向け情報
+
 ## 🛠️ 技術スタック
 
 | レイヤー | 技術 |
@@ -30,13 +39,6 @@ FxPing は、ExPing の精神を受け継ぎつつ、モダンなクロスプラ
 | Ping実装 | surge-ping |
 | ビルドツール | Vite 7 |
 | テスト | Vitest |
-
-## 📦 使い方
-
-- リリース版は、[リリース](https://github.com/kamera25/fxping/releases)からダウンロードしてください。
-- [使い方](assets/howtouse.md) をご参照ください。
-
----
 
 ##  必要要件
 
@@ -102,6 +104,8 @@ fxping/
 ├── package.json
 └── README.md
 ```
+
+# 本ツールの作成にあたり
 
 ## 🙏 謝辞
 - **[Tauri](https://tauri.app/)** — 軽量かつセキュアなクロスプラットフォームデスクトップアプリケーションフレームワーク
