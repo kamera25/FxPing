@@ -54,16 +54,20 @@
     display: flex;
     gap: 16px;
     align-items: center;
+    flex: 1;
+    text-align: left;
 }
 
 .hostText {
     font-weight: bold;
     min-width: 120px;
+    text-align: left;
 }
 
 .remarksText {
     opacity: 0.7;
     font-size: 0.9em;
+    text-align: left;
 }
 
 .targetActions {

@@ -85,11 +85,11 @@ const TargetsTab: React.FC = () => {
                         style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                     />
                 </label>
-                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={invertTargetsEnabled}>反転</button>
-                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
-                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ng1')}>NGが1回以上</button>
-                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allNg')}>全部NGのみ</button>
-                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allOk')}>全部OKのみ</button>
+                <button className={styles.btnSmall} style={{ background: '#ccccccff' }} onClick={invertTargetsEnabled}>反転</button>
+                <button className={styles.btnSmall} style={{ background: '#37ec6aff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allOk')}>全部OKのみ</button>
+                <button className={styles.btnSmall} style={{ background: '#12a73cff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
+                <button className={styles.btnSmall} style={{ background: '#ec5b37ff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ng1')}>NGが1回以上</button>
+                <button className={styles.btnSmall} style={{ background: '#a71212ff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allNg')}>全部NGのみ</button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
                 {targets.map(t => (
