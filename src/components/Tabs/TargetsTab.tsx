@@ -84,7 +84,6 @@ const TargetsTab: React.FC = () => {
                         onChange={(e) => setAllTargetsEnabled(e.target.checked)}
                         style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                     />
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-color, #ddd)' }}>全選択</span>
                 </label>
                 <button className={styles.btnSmall} style={{ background: '#444' }} onClick={invertTargetsEnabled}>反転</button>
                 <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
