@@ -4,15 +4,59 @@ import { useUIStore } from '../../store/uiStore';
 import { TableSize } from '../../types';
 import styles from './TraceRouteTab.module.css';
 
-import { usePingEngine } from '../../hooks/usePingEngine';
-
+import { invoke } from '@tauri-apps/api/core';
+import { TraceResult } from '../../types';
+import { useTargetStore } from '../../store/targetStore';
+import { useSettingsStore } from '../../store/settingsStore';
 const TraceRouteTab: React.FC = () => {
-    const { runTraceRoute, handleProtocolChange: onProtocolChange } = usePingEngine();
     const { traceResults, setTraceResults, isTracing, traceProtocol } = useTraceStore();
     const { tableSize, setTableSize } = useUIStore();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(false);
+
+    const { targets } = useTargetStore();
+    const { settings } = useSettingsStore();
+
+    const runTraceRoute = async () => {
+        useTraceStore.getState().setIsTracing(true);
+        for (const target of targets) {
+            try {
+                const res = await invoke<TraceResult>("traceroute_target", {
+                    target: target.host,
+                    timeoutMs: settings.timeout,
+                    payloadSize: settings.payloadSize,
+                    maxHops: settings.maxHops,
+                    resolveHostnames: settings.resolveHostnames,
+                    protocol: traceProtocol
+                });
+                setTraceResults(prev => {
+                    const exists = prev.some(r => r.target === res.target);
+                    if (exists) {
+                        return prev.map(r => r.target === res.target ? res : r);
+                    }
+                    return [...prev, res];
+                });
+            } catch (e) {
+                console.error("Trace error", e);
+            }
+        }
+        useTraceStore.getState().setIsTracing(false);
+    };
+
+    const onProtocolChange = async (proto: 'ICMP' | 'UDP') => {
+        if (proto === 'UDP') {
+            const platform = await invoke<string>("get_platform");
+            if (platform === 'windows') {
+                const admin = await invoke<boolean>("is_admin");
+                if (!admin) {
+                    alert("Windows UDP Traceroute実行には管理者権限が必要です。管理者権限で実行してください。");
+                    return;
+                }
+            }
+        }
+        useTraceStore.getState().setTraceProtocol(proto);
+    };
 
     const checkScroll = useCallback(() => {
         const container = scrollContainerRef.current;

@@ -48,6 +48,7 @@ function App() {
   const { initPlatform, loadSettingsFromIni } = useSettings();
   const { loadDefTargets } = useTargets();
   useAutoSave();
+  usePingEngine();
 
   useEffect(() => {
     loadDefTargets();

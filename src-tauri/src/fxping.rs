@@ -1,8 +1,6 @@
-use serde::Deserialize;
-use std::fs::File;
-use std::io::Write;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
+pub mod commands;
 mod error;
 mod ini_settings;
 mod pinger;
@@ -10,14 +8,7 @@ mod resolve;
 mod tcpip;
 mod tracer;
 
-use crate::tcpip::hop::Hop;
-use crate::tcpip::host::Host;
-use crate::tcpip::payload_size::PayloadSize;
-use crate::tcpip::protocol::Protocol;
-use crate::tcpip::timeout::Timeout;
 pub use error::FxPingError;
-use pinger::{PingResult, Pinger};
-use tracer::Tracer;
 
 // --- Security Policy ---
 // このアプリケーションは、Ping（ICMP）および Traceroute 以外の外部通信を行わない設計になっています。
@@ -25,194 +16,6 @@ use tracer::Tracer;
 // バックエンドでも HTTP/HTTPS ライブラリ（reqwest 等）の導入は制限されています。
 // 新しい機能を追加する際は、不必要なネットワーク通信が発生しないよう十分注意してください。
 // ------------------------
-
-#[tauri::command]
-async fn ping_target(
-    target: Host,
-    remarks: String,
-    timeout_ms: Timeout,
-    payload_size: PayloadSize,
-    ttl: Hop,
-) -> Result<PingResult, FxPingError> {
-    match Pinger::new(target.clone(), timeout_ms, payload_size, ttl).await {
-        Ok(pinger) => pinger.ping(remarks).await,
-        Err(FxPingError::DnsResolution { .. }) => Ok(PingResult {
-            target,
-            ip: None,
-            time_ms: None,
-            status: "server can't find NXDOMAIN".to_string(),
-            timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
-            remarks,
-        }),
-        Err(e) => Err(e),
-    }
-}
-
-#[tauri::command]
-async fn traceroute_target(
-    app: tauri::AppHandle,
-    target: Host,
-    timeout_ms: Timeout,
-    payload_size: PayloadSize,
-    max_hops: Hop,
-    resolve_hostnames: bool,
-    protocol: Protocol,
-) -> Result<tracer::TraceResult, FxPingError> {
-    match Tracer::new(
-        target.clone(),
-        timeout_ms,
-        payload_size,
-        max_hops,
-        protocol,
-        resolve_hostnames,
-    )
-    .await
-    {
-        Ok(tracer) => tracer.trace(app).await,
-        Err(FxPingError::DnsResolution { .. }) => Ok(tracer::TraceResult {
-            target,
-            ping_ok: Some(false),
-            hops: Vec::new(),
-            timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
-        }),
-        Err(e) => Err(e),
-    }
-}
-
-#[tauri::command]
-fn validate_host(_host: Host) -> Result<(), FxPingError> {
-    Ok(())
-}
-
-#[tauri::command]
-fn get_platform() -> String {
-    std::env::consts::OS.to_string()
-}
-
-#[derive(Debug, Deserialize)]
-pub struct TargetData {
-    pub host: Host,
-    pub remarks: String,
-}
-
-#[tauri::command]
-async fn load_def_targets() -> Result<Option<String>, FxPingError> {
-    let exe_path = std::env::current_exe()?;
-    let dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
-    let def_path = dir.join("ExPing.def");
-
-    if def_path.exists() {
-        let content = std::fs::read_to_string(def_path)?;
-        Ok(Some(content))
-    } else {
-        Ok(None)
-    }
-}
-
-#[tauri::command]
-async fn save_targets(targets: Vec<TargetData>) -> Result<(), FxPingError> {
-    // 実行時パス (Executable path)
-    let exe_path = std::env::current_exe()?;
-    let dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
-    let def_path = dir.join("ExPing.def");
-
-    let mut file = File::create(def_path)?;
-    for target in targets {
-        if target.remarks.is_empty() {
-            writeln!(file, "{}", target.host)?;
-        } else {
-            writeln!(file, "{} #{}", target.host, target.remarks)?;
-        }
-    }
-    Ok(())
-}
-
-#[tauri::command]
-async fn save_text_file(path: String, content: String) -> Result<(), FxPingError> {
-    let mut file = File::create(path)?;
-    file.write_all(content.as_bytes())?;
-    Ok(())
-}
-
-#[tauri::command]
-async fn append_text_file(path: String, content: String) -> Result<(), FxPingError> {
-    use std::fs::OpenOptions;
-    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
-    file.write_all(content.as_bytes())?;
-    Ok(())
-}
-
-#[tauri::command]
-async fn launch_external_program(
-    path: String,
-    options: String,
-    working_dir: String,
-) -> Result<(), FxPingError> {
-    let mut command = std::process::Command::new(&path);
-    if !options.is_empty() {
-        for arg in options.split_whitespace() {
-            command.arg(arg);
-        }
-    }
-    if !working_dir.is_empty() {
-        command.current_dir(working_dir);
-    }
-
-    command.spawn()?;
-    Ok(())
-}
-
-#[tauri::command]
-fn play_sound_native(path: String) -> bool {
-    let _ = path;
-    return false;
-}
-
-#[tauri::command]
-fn read_file_bytes(path: String) -> Result<Vec<u8>, FxPingError> {
-    Ok(std::fs::read(&path)?)
-}
-
-#[tauri::command]
-fn show_main_window(window: tauri::Window) {
-    window.show().unwrap();
-}
-
-#[tauri::command]
-async fn load_settings_from_ini() -> Result<Option<ini_settings::Settings>, FxPingError> {
-    ini_settings::load_from_ini()
-}
-
-#[tauri::command]
-async fn save_settings_to_ini(settings: ini_settings::Settings) -> Result<(), FxPingError> {
-    ini_settings::save_to_ini(settings)
-}
-
-#[tauri::command]
-fn is_admin() -> bool {
-    #[cfg(windows)]
-    {
-        // On Windows, checking if we have admin privileges by trying to open the SCManager
-        // or by using "net session" (which is usually what people use in scripts).
-        // Another common way is to check if we can open the physical drive for reading.
-        // But a simple way is to use "net session" and check the exit code.
-        std::process::Command::new("net")
-            .arg("session")
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
-    }
-    #[cfg(unix)]
-    {
-        // On Unix, check if the effective user ID is 0 (root).
-        // However, traceroute often doesn't need root if it's suid or uses capabilities.
-        // For UDP traceroute, it depends on the system.
-        // In many cases, it's safer to just return true for Unix unless specifically restricted.
-        unsafe { libc::getuid() == 0 }
-    }
-}
 
 fn setup_menu(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let products_menu = Submenu::with_id_and_items(
@@ -289,21 +92,21 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            ping_target,
-            traceroute_target,
-            validate_host,
-            save_targets,
-            save_text_file,
-            append_text_file,
-            get_platform,
-            read_file_bytes,
-            is_admin,
-            show_main_window,
-            launch_external_program,
-            load_def_targets,
-            load_settings_from_ini,
-            save_settings_to_ini,
-            play_sound_native
+            commands::ping::ping_target,
+            commands::trace::traceroute_target,
+            commands::ping::validate_host,
+            commands::file::save_targets,
+            commands::file::save_text_file,
+            commands::file::append_text_file,
+            commands::system::get_platform,
+            commands::file::read_file_bytes,
+            commands::system::is_admin,
+            commands::system::show_main_window,
+            commands::system::launch_external_program,
+            commands::file::load_def_targets,
+            commands::settings::load_settings_from_ini,
+            commands::settings::save_settings_to_ini,
+            commands::system::play_sound_native
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,11 +2,9 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePingStore } from "../store/pingStore";
 import { useTargetStore } from "../store/targetStore";
-import { useTraceStore } from "../store/traceStore";
 import { useSettingsStore } from "../store/settingsStore";
-import { useUIStore } from "../store/uiStore";
 import { useAlertStore } from "../store/alertStore";
-import { PingResult, Target, TraceResult } from "../types";
+import { PingResult, Target } from "../types";
 import { updateTargetStats } from "../utils/logic";
 import { useNgDetection } from "./useNgDetection";
 import { useOkDetection } from "./useOkDetection";
@@ -14,38 +12,12 @@ import { useOkDetection } from "./useOkDetection";
 export const usePingEngine = () => {
     const { setResults, setTargetStats, isPinging, setIsPinging, isRunActive, setIsRunActive, setNextPingTimeMs } = usePingStore();
     const { targets } = useTargetStore();
-    const { setIsTracing, setTraceResults, traceProtocol } = useTraceStore();
     const { settings } = useSettingsStore();
-    const { platform } = useUIStore();
 
     const { handleNgDetection } = useNgDetection();
     const { handleOkDetection } = useOkDetection();
 
-    const runTraceRoute = async () => {
-        setIsTracing(true);
-        for (const target of targets) {
-            try {
-                const res = await invoke<TraceResult>("traceroute_target", {
-                    target: target.host,
-                    timeoutMs: settings.timeout,
-                    payloadSize: settings.payloadSize,
-                    maxHops: settings.maxHops,
-                    resolveHostnames: settings.resolveHostnames,
-                    protocol: traceProtocol
-                });
-                setTraceResults(prev => {
-                    const exists = prev.some(r => r.target === res.target);
-                    if (exists) {
-                        return prev.map(r => r.target === res.target ? res : r);
-                    }
-                    return [...prev, res];
-                });
-            } catch (e) {
-                console.error("Trace error", e);
-            }
-        }
-        setIsTracing(false);
-    };
+
 
     useEffect(() => {
         let interval: number | undefined;
@@ -184,19 +156,5 @@ export const usePingEngine = () => {
         };
     }, [settings.periodicExecution, settings.periodicInterval, isPinging, isRunActive, setIsPinging, setNextPingTimeMs]);
 
-    const handleProtocolChange = async (proto: 'ICMP' | 'UDP') => {
-        if (proto === 'UDP' && platform === 'windows') {
-            const admin = await invoke<boolean>("is_admin");
-            if (!admin) {
-                alert("Windows UDP Traceroute実行には管理者権限が必要です。管理者権限で実行してください。");
-                return;
-            }
-        }
-        useTraceStore.getState().setTraceProtocol(proto);
-    };
-
-    return {
-        runTraceRoute,
-        handleProtocolChange
-    };
+    return {};
 };
