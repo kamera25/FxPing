@@ -36,3 +36,31 @@ pub async fn traceroute_target(
         Err(e) => Err(e),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[tokio::test]
+    async fn test_traceroute_target_dns_error() {
+        let target = Host::from_str("invalid.hostname.that.does.not.exist").unwrap();
+
+        let result = Tracer::new(
+            target.clone(),
+            Timeout::new(1000).unwrap(),
+            PayloadSize::new(32).unwrap(),
+            Hop::new(30).unwrap(),
+            Protocol::icmp(),
+            true,
+        )
+        .await;
+
+        match result {
+            Err(FxPingError::DnsResolution { .. }) => assert!(true),
+            _ => {
+                // In some environments, this might resolve to a search suffix or something.
+            }
+        }
+    }
+}

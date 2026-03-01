@@ -53,3 +53,26 @@ pub fn is_admin() -> bool {
         unsafe { libc::getuid() == 0 }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_platform() {
+        let platform = get_platform();
+        assert_eq!(platform, std::env::consts::OS);
+    }
+
+    #[test]
+    fn test_play_sound_native() {
+        assert_eq!(play_sound_native("test.wav".to_string()), false);
+    }
+
+    #[test]
+    fn test_is_admin() {
+        // This will depend on the environment (sudo or not)
+        // But we can at least check it returns a boolean.
+        let _ = is_admin();
+    }
+}
