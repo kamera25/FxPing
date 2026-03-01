@@ -1,6 +1,6 @@
 [package]
 name = "FxPing"
-version = "0.1.0"
+version = "0.2.0"
 description = "FxPing is a free network tool that allows you to efficiently perform simultaneous ping tests to multiple IP addresses for connectivity monitoring."
 authors = ["NAKAOKU Takahiro"]
 edition = "2021"
