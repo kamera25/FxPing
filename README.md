@@ -31,13 +31,20 @@ FxPing は、ExPing の精神を受け継ぎつつ、モダンなクロスプラ
 | ビルドツール | Vite 7 |
 | テスト | Vitest |
 
-## 📦 必要要件
+## 📦 使い方
+
+- リリース版は、[リリース](https://github.com/kamera25/fxping/releases)からダウンロードしてください。
+- [使い方](assets/howtouse.md) をご参照ください。
+
+---
+
+##  必要要件
 
 - [Node.js](https://nodejs.org/) (v18 以上)
 - [Rust](https://www.rust-lang.org/tools/install) (最新の stable)
 - [Tauri CLI](https://tauri.app/start/)
 
-## 🚀 セットアップ
+## 🚀 セットアップ(開発者向け)
 
 ```bash
 # リポジトリのクローン
