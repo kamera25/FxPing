@@ -119,7 +119,7 @@ const TargetsTab: React.FC = () => {
                         <input
                             type="text"
                             className={`${(isInputError || !isHostValid) ? styles.inputError : ''} ${styles.inputHost}`}
-                            placeholder="IPアドレスまたはホスト名..."
+                            placeholder="IPアドレス、セグメント(CIDR) または ホスト名..."
                             value={newTarget}
                             onChange={(e) => setNewTarget(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && addTarget()}
@@ -151,7 +151,7 @@ const TargetsTab: React.FC = () => {
                         </div>
                         <textarea
                             className={`${styles.expingTextarea} ${!isExPingValid ? styles.inputError : ''}`}
-                            placeholder="'監視対象 サーバ群&#10;localhost 自機 1&#10;198.51.100.1 Google_Public_DNS#1"
+                            placeholder="'監視対象 サーバ群&#10;localhost 自機 1&#10;8.8.8.8 Google_Public_DNS#1&#10;203.0.113.0/24 ネットワーク#A"
                             value={exPingText}
                             onChange={(e) => setExPingText(e.target.value)}
                             onDragOver={(e) => e.preventDefault()}
