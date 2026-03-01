@@ -17,8 +17,8 @@
         "width": 800,
         "height": 600,
         "dragDropEnabled": false,
-        "devtools": false,
-        "visible": false,
+        "devtools": true,
+        "visible": true,
         "backgroundColor": "#121212"
       }
     ],

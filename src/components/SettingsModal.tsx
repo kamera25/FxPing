@@ -8,7 +8,7 @@ import OKSettings from './settings/OKSettings';
 import { useSettings } from '../hooks/useSettings';
 import styles from './SettingsModal.module.css';
 
-interface SettingsModalProps { }
+
 
 const SettingsModal: React.FC = () => {
     const { selectFile, selectDir, playSound } = useSettings();

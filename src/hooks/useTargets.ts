@@ -33,8 +33,8 @@ export const useTargets = () => {
         try {
             const cidrExpanded = expandCidr(newTarget);
             const targetsToAdd = cidrExpanded !== null
-                ? cidrExpanded.map(ip => ({ host: ip, remarks: newRemarks }))
-                : [{ host: newTarget, remarks: newRemarks }];
+                ? cidrExpanded.map(ip => ({ host: ip, remarks: newRemarks, isEnabled: true }))
+                : [{ host: newTarget, remarks: newRemarks, isEnabled: true }];
 
             const newTargetsList = [...targets];
             let hasError = false;
@@ -84,7 +84,7 @@ export const useTargets = () => {
 
         for (const item of items) {
             if (isValidHost(item.host)) {
-                newTargets.push(item);
+                newTargets.push({ ...item, isEnabled: true });
             } else {
                 invalidHosts.push(`${item.host} (Invalid format)`);
             }

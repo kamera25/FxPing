@@ -4,7 +4,7 @@ import App from "./App";
 import "./styles/tokens.css";
 import "./styles/global.css";
 
-if (import.meta.env.PROD || true) { // We can adjust this if the user wants devtools in dev
+if (import.meta.env.PROD || false) { // We can adjust this if the user wants devtools in dev
   // Disable right-click context menu
   document.addEventListener("contextmenu", (e) => e.preventDefault());
 

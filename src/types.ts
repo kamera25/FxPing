@@ -10,6 +10,7 @@ export interface PingResult {
 export interface Target {
     host: string;
     remarks: string;
+    isEnabled?: boolean;
 }
 
 export interface TraceHop {

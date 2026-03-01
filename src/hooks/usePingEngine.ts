@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { usePingStore } from "../store/pingStore";
 import { useTargetStore } from "../store/targetStore";
@@ -10,12 +10,26 @@ import { useNgDetection } from "./useNgDetection";
 import { useOkDetection } from "./useOkDetection";
 
 export const usePingEngine = () => {
-    const { setResults, setTargetStats, status, setStatus, setNextPingTimeMs, stopPing, startPing, pausePing } = usePingStore();
-    const { targets } = useTargetStore();
+    const { setResults, setTargetStats, status, setNextPingTimeMs, stopPing, startPing, pausePing } = usePingStore();
+    const { targets: allTargets } = useTargetStore();
     const { settings } = useSettingsStore();
+
+    // Stabilize filtered targets with useMemo to prevent new reference on every render
+    const targets = useMemo(
+        () => allTargets.filter(t => t.isEnabled !== false),
+        [allTargets]
+    );
 
     const { handleNgDetection } = useNgDetection();
     const { handleOkDetection } = useOkDetection();
+
+    // Use refs for values that the effect needs but shouldn't trigger re-runs
+    const settingsRef = useRef(settings);
+    settingsRef.current = settings;
+    const handleNgDetectionRef = useRef(handleNgDetection);
+    handleNgDetectionRef.current = handleNgDetection;
+    const handleOkDetectionRef = useRef(handleOkDetection);
+    handleOkDetectionRef.current = handleOkDetection;
 
     const isPinging = status === 'running';
     const isWaiting = status === 'waiting';
@@ -23,27 +37,29 @@ export const usePingEngine = () => {
     useEffect(() => {
         let interval: number | undefined;
         if (isPinging && targets.length > 0) {
+            const s = settingsRef.current;
             let currentIteration = 0;
             let currentTargetIndex = 0;
             let isExecuting = false;
             let lastPingTime = Date.now();
 
             // Reset suppression stats if notifyOnIntervalOnly is enabled
-            if (settings.ng.notifyOnIntervalOnly) {
+            if (s.ng.notifyOnIntervalOnly) {
                 useAlertStore.getState().setTargetNgStats({});
             }
-            if (settings.ok.notifyOnIntervalOnly) {
+            if (s.ok.notifyOnIntervalOnly) {
                 useAlertStore.getState().setTargetOkStats({});
             }
 
             const runPing = async () => {
                 if (isExecuting) return;
                 isExecuting = true;
+                const currentSettings = settingsRef.current;
 
-                if (settings.repeatCount > 0) {
-                    if (settings.repeatMode === 'sequential') {
+                if (currentSettings.repeatCount > 0) {
+                    if (currentSettings.repeatMode === 'sequential') {
                         if (currentTargetIndex >= targets.length) {
-                            if (settings.periodicExecution) {
+                            if (currentSettings.periodicExecution) {
                                 pausePing();
                             } else {
                                 stopPing();
@@ -52,8 +68,8 @@ export const usePingEngine = () => {
                             return;
                         }
                     } else {
-                        if (currentIteration >= settings.repeatCount) {
-                            if (settings.periodicExecution) {
+                        if (currentIteration >= currentSettings.repeatCount) {
+                            if (currentSettings.periodicExecution) {
                                 pausePing();
                             } else {
                                 stopPing();
@@ -66,17 +82,17 @@ export const usePingEngine = () => {
 
                 try {
                     let targetsToPing: Target[] = [];
-                    if (settings.repeatMode === 'parallel') {
+                    if (currentSettings.repeatMode === 'parallel') {
                         targetsToPing = targets;
                         currentIteration++;
-                    } else if (settings.repeatMode === 'sequential') {
+                    } else if (currentSettings.repeatMode === 'sequential') {
                         targetsToPing = [targets[currentTargetIndex]];
                         currentIteration++;
-                        if (currentIteration >= settings.repeatCount) {
+                        if (currentIteration >= currentSettings.repeatCount) {
                             currentIteration = 0;
                             currentTargetIndex++;
                         }
-                    } else if (settings.repeatMode === 'robin') {
+                    } else if (currentSettings.repeatMode === 'robin') {
                         targetsToPing = [targets[currentTargetIndex]];
                         currentTargetIndex++;
                         if (currentTargetIndex >= targets.length) {
@@ -89,9 +105,9 @@ export const usePingEngine = () => {
                         invoke<PingResult>("ping_target", {
                             target: target.host,
                             remarks: target.remarks,
-                            timeoutMs: settings.timeout,
-                            payloadSize: settings.payloadSize,
-                            ttl: settings.ttl
+                            timeoutMs: currentSettings.timeout,
+                            payloadSize: currentSettings.payloadSize,
+                            ttl: currentSettings.ttl
                         })
                     );
 
@@ -99,15 +115,15 @@ export const usePingEngine = () => {
 
                     setResults(prev => {
                         const combined = [...prev, ...newResults];
-                        if (settings.autoDeleteResults && combined.length > settings.maxResults) {
-                            return combined.slice(-settings.maxResults);
+                        if (currentSettings.autoDeleteResults && combined.length > currentSettings.maxResults) {
+                            return combined.slice(-currentSettings.maxResults);
                         }
                         return combined.slice(-1000);
                     });
 
                     setTargetStats(prev => updateTargetStats(prev, newResults));
-                    handleNgDetection(newResults);
-                    handleOkDetection(newResults);
+                    handleNgDetectionRef.current(newResults);
+                    handleOkDetectionRef.current(newResults);
 
                 } catch (e) {
                     console.error("Ping error", e);
@@ -118,12 +134,12 @@ export const usePingEngine = () => {
             };
 
             runPing();
-            interval = window.setInterval(runPing, settings.interval);
+            interval = window.setInterval(runPing, s.interval);
 
             const countdownTimer = window.setInterval(() => {
                 const now = Date.now();
                 const elapsed = now - lastPingTime;
-                const remaining = Math.max(0, settings.interval - elapsed);
+                const remaining = Math.max(0, settingsRef.current.interval - elapsed);
                 setNextPingTimeMs(remaining);
             }, 100);
 
@@ -135,7 +151,7 @@ export const usePingEngine = () => {
         } else {
             setNextPingTimeMs(null);
         }
-    }, [isPinging, targets, settings, stopPing, pausePing, setResults, setTargetStats, setNextPingTimeMs, handleNgDetection, handleOkDetection]);
+    }, [isPinging, targets, stopPing, pausePing, setResults, setTargetStats, setNextPingTimeMs]);
 
     useEffect(() => {
         let periodicTimer: number | undefined;

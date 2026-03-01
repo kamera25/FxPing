@@ -15,11 +15,19 @@ export const useAutoSave = () => {
     const lastSavedIndexRef = useRef(0);
     const lastSavedPathRef = useRef<string | null>(null);
 
+    // Use refs for values that change frequently but shouldn't trigger the effect
+    const currentTimeRef = useRef(currentTime);
+    currentTimeRef.current = currentTime;
+    const platformRef = useRef(platform);
+    platformRef.current = platform;
+
     const getLogFilePath = () => {
+        const time = currentTimeRef.current;
+        const p = platformRef.current;
         if (!settings.logs.savePath) return null;
-        const y = String(currentTime.getFullYear()).slice(-2);
-        const m = String(currentTime.getMonth() + 1).padStart(2, '0');
-        const d = String(currentTime.getDate()).padStart(2, '0');
+        const y = String(time.getFullYear()).slice(-2);
+        const m = String(time.getMonth() + 1).padStart(2, '0');
+        const d = String(time.getDate()).padStart(2, '0');
         const dateStr = `${y}${m}${d}`;
 
         let fileName = "";
@@ -30,7 +38,7 @@ export const useAutoSave = () => {
             fileName = `${settings.logs.prefix}${dateStr}.${ext || 'LOG'}`;
         }
 
-        const sep = platform.toLowerCase().includes('win') ? '\\' : '/';
+        const sep = p.toLowerCase().includes('win') ? '\\' : '/';
         let path = settings.logs.savePath;
         if (!path.endsWith(sep)) {
             path += sep;
@@ -69,7 +77,7 @@ export const useAutoSave = () => {
             lastSavedIndexRef.current = 0;
             lastSavedPathRef.current = null;
         }
-    }, [results, isRunActive, settings.logs.autoSave, settings.logs.savePath, settings.logs.fileNameSetting, settings.logs.fixedName, settings.logs.prefix, settings.logs.extension, platform, currentTime]);
+    }, [results, isRunActive, settings.logs.autoSave, settings.logs.savePath, settings.logs.fileNameSetting, settings.logs.fixedName, settings.logs.prefix, settings.logs.extension]);
 
     return {
         getLogFilePath

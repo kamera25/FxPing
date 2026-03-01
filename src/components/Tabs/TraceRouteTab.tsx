@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useTraceStore } from '../../store/traceStore';
 import { useUIStore } from '../../store/uiStore';
-import { TableSize } from '../../types';
+
 import styles from './TraceRouteTab.module.css';
 
 import { invoke } from '@tauri-apps/api/core';
@@ -20,7 +20,7 @@ const TraceRouteTab: React.FC = () => {
 
     const runTraceRoute = async () => {
         useTraceStore.getState().setIsTracing(true);
-        for (const target of targets) {
+        for (const target of targets.filter(t => t.isEnabled !== false)) {
             try {
                 const res = await invoke<TraceResult>("traceroute_target", {
                     target: target.host,

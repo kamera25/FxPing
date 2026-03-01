@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, TargetStats } from '../../types';
+
 import styles from './StatsTab.module.css';
 
 import { useTargetStore } from '../../store/targetStore';

@@ -3,6 +3,7 @@ import styles from './TargetsTab.module.css';
 import { isValidHost } from '../../utils/logic';
 import { useTargetStore } from '../../store/targetStore';
 import { useTargets } from '../../hooks/useTargets';
+import { usePingStore } from '../../store/pingStore';
 
 const TargetsTab: React.FC = () => {
     const {
@@ -11,8 +12,14 @@ const TargetsTab: React.FC = () => {
         newRemarks, setNewRemarks,
         isInputError,
         showExPingInput, setShowExPingInput,
-        exPingText, setExPingText
+        exPingText, setExPingText,
+        toggleTargetEnabled,
+        setAllTargetsEnabled,
+        setTargetsEnabledByStats,
+        invertTargetsEnabled
     } = useTargetStore();
+
+    const { targetStats } = usePingStore();
 
     const {
         addTarget,
@@ -69,17 +76,41 @@ const TargetsTab: React.FC = () => {
                     </div>
                 </div>
             </div>
-            {targets.map(t => (
-                <div key={t.host} className={styles.targetItem}>
-                    <div className={styles.targetInfo}>
-                        <span className={styles.hostText}>{t.host}</span>
-                        <span className={styles.remarksText}>{t.remarks}</span>
+            <div style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: 'var(--bg-secondary, #2A2A2A)', borderBottom: '1px solid var(--border-color, #444)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginRight: '8px' }}>
+                    <input
+                        type="checkbox"
+                        checked={targets.length > 0 && targets.every(t => t.isEnabled !== false)}
+                        onChange={(e) => setAllTargetsEnabled(e.target.checked)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-color, #ddd)' }}>全選択</span>
+                </label>
+                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={invertTargetsEnabled}>反転</button>
+                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
+                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ng1')}>NGが1回以上</button>
+                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allNg')}>全部NGのみ</button>
+                <button className={styles.btnSmall} style={{ background: '#444' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allOk')}>全部OKのみ</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+                {targets.map(t => (
+                    <div key={t.host} className={styles.targetItem}>
+                        <input
+                            type="checkbox"
+                            checked={t.isEnabled !== false}
+                            onChange={() => toggleTargetEnabled(t.host)}
+                            style={{ marginRight: '12px', cursor: 'pointer', width: '16px', height: '16px', flexShrink: 0 }}
+                        />
+                        <div className={styles.targetInfo}>
+                            <span className={styles.hostText}>{t.host}</span>
+                            <span className={styles.remarksText}>{t.remarks}</span>
+                        </div>
+                        <div className={styles.targetActions}>
+                            <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => removeTarget(t.host)}>削除</button>
+                        </div>
                     </div>
-                    <div className={styles.targetActions}>
-                        <button className={`${styles.btnSmall} ${styles.btnDanger}`} onClick={() => removeTarget(t.host)}>削除</button>
-                    </div>
-                </div>
-            ))}
+                ))}
+            </div>
 
             <div className={styles.expingSection}>
                 {!showExPingInput ? (
