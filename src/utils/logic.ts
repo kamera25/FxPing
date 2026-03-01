@@ -1,6 +1,45 @@
 import { PingResult, Target, TargetStats, Settings, TraceResult } from "../types";
 
 /**
+ * Expands an IPv4 CIDR string into an array of IP strings.
+ * Returns null if the input is not a valid IPv4 CIDR string or if the range is too large.
+ */
+export function expandCidr(cidr: string): string[] | null {
+    const parts = cidr.split('/');
+    if (parts.length !== 2) return null;
+    const ipStr = parts[0];
+    const prefixStr = parts[1];
+
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(ipStr)) return null;
+
+    const prefix = parseInt(prefixStr, 10);
+    if (isNaN(prefix) || prefix < 0 || prefix > 32) return null;
+
+    const ipParts = ipStr.split('.').map(Number);
+    if (!ipParts.every(p => p >= 0 && p <= 255)) return null;
+
+    const ipInt = ((ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3]) >>> 0;
+    const mask = prefix === 0 ? 0 : ((~0) << (32 - prefix)) >>> 0;
+    const network = (ipInt & mask) >>> 0;
+    const numHosts = prefix === 32 ? 1 : Math.pow(2, 32 - prefix);
+
+    // Limit to max 65536 to prevent excessive memory/UI issues
+    if (numHosts > 65536) return null;
+
+    const ips: string[] = [];
+    for (let i = 0; i < numHosts; i++) {
+        const currentIp = (network + i) >>> 0;
+        const p1 = (currentIp >>> 24) & 255;
+        const p2 = (currentIp >>> 16) & 255;
+        const p3 = (currentIp >>> 8) & 255;
+        const p4 = currentIp & 255;
+        ips.push(`${p1}.${p2}.${p3}.${p4}`);
+    }
+    return ips;
+}
+
+/**
  * Validates if a string is a valid IPv4, IPv6, FQDN, or localhost.
  */
 export function isValidHost(host: string): boolean {
@@ -19,6 +58,12 @@ export function isValidHost(host: string): boolean {
             const n = parseInt(p, 10);
             return n >= 0 && n <= 255;
         });
+    }
+
+    if (s.includes('/')) {
+        if (expandCidr(s) !== null) {
+            return true;
+        }
     }
 
     // 3. Simple check for IPv6 (contains : and valid hex/dots)

@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useTargetStore } from "../store/targetStore";
 import { Target } from "../types";
-import { parseExPingText, isValidHost } from "../utils/logic";
+import { parseExPingText, isValidHost, expandCidr } from "../utils/logic";
 
 export const useTargets = () => {
     const {
@@ -31,12 +31,42 @@ export const useTargets = () => {
         }
 
         try {
-            await invoke("validate_host", { host: newTarget });
-            if (!targets.some(t => t.host === newTarget)) {
-                setTargets([...targets, { host: newTarget, remarks: newRemarks }]);
-                setNewTarget("");
-                setNewRemarks("");
+            const cidrExpanded = expandCidr(newTarget);
+            const targetsToAdd = cidrExpanded !== null
+                ? cidrExpanded.map(ip => ({ host: ip, remarks: newRemarks }))
+                : [{ host: newTarget, remarks: newRemarks }];
+
+            const newTargetsList = [...targets];
+            let hasError = false;
+
+            const validationPromises = targetsToAdd.map(async (t) => {
+                if (!newTargetsList.some(existing => existing.host === t.host)) {
+                    await invoke("validate_host", { host: t.host });
+                    return t;
+                }
+                return null;
+            });
+
+            const results = await Promise.allSettled(validationPromises);
+
+            for (const result of results) {
+                if (result.status === "fulfilled" && result.value) {
+                    newTargetsList.push(result.value);
+                } else if (result.status === "rejected") {
+                    hasError = true;
+                    console.error(`Invalid target validation failed: ${result.reason}`);
+                }
             }
+
+            if (hasError && newTargetsList.length === targets.length) {
+                triggerShake();
+                return;
+            }
+
+            setTargets(newTargetsList);
+            setNewTarget("");
+            setNewRemarks("");
+
         } catch (e) {
             triggerShake();
             console.error(`Invalid target: ${e}`);
