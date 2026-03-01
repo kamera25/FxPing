@@ -7,6 +7,8 @@ set -e
 PLATFORM="macos"
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
     PLATFORM="windows"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    PLATFORM="linux"
 fi
 
 # 引数でターゲットを明示的に指定可能にする (--windows)
@@ -29,6 +31,9 @@ if [ "$PLATFORM" == "macos" ]; then
         echo "⚠️  注意: これには cargo-xwin と NSIS (Homebrew) 等のセットアップが必要です。"
         npm run tauri build -- --target x86_64-pc-windows-gnu
     fi
+elif [ "$PLATFORM" == "linux" ]; then
+    echo "🐧 Linux (AppImage/Deb) のビルド中..."
+    npm run tauri build
 else
     echo "🪟 Windows (EXE) のビルド中..."
     npm run tauri build
@@ -42,6 +47,8 @@ if [ "$PLATFORM" == "macos" ]; then
     if [ "$BUILD_WINDOWS" = true ]; then
         echo "📦 EXE: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/"
     fi
+elif [ "$PLATFORM" == "linux" ]; then
+    echo "📦 AppImage/Deb: src-tauri/target/release/bundle/"
 else
     echo "📦 EXE: src-tauri/target/release/bundle/nsis/"
 fi
