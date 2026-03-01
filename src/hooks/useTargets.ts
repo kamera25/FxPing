@@ -187,9 +187,14 @@ export const useTargets = () => {
         }
     };
 
+    const removeSelectedTargets = () => {
+        setTargets(targets.filter(item => item.isEnabled === false));
+    };
+
     return {
         addTarget,
         removeTarget,
+        removeSelectedTargets,
         handleExPingApply,
         handleTargetListDrop,
         handleDrop,

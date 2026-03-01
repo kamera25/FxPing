@@ -24,6 +24,7 @@ const TargetsTab: React.FC = () => {
     const {
         addTarget,
         removeTarget,
+        removeSelectedTargets,
         handleExPingApply,
         handleTargetListDrop,
         handleDrop
@@ -74,6 +75,13 @@ const TargetsTab: React.FC = () => {
                                     <button className={styles.btnSmall} style={{ background: '#12a73cff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
                                     <button className={styles.btnSmall} style={{ background: '#ec5b37ff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ng1')}>NGが1回以上</button>
                                     <button className={styles.btnSmall} style={{ background: '#a71212ff', color: '#ffffff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allNg')}>全部NGのみ</button>
+                                    <button
+                                        className={`${styles.btnSmall} ${styles.btnDanger}`}
+                                        style={{ marginLeft: 'auto' }}
+                                        onClick={removeSelectedTargets}
+                                    >
+                                        選択ホストを削除
+                                    </button>
                                 </div>
                             </th>
                         </tr>
