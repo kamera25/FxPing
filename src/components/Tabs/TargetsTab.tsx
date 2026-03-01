@@ -72,8 +72,8 @@ const TargetsTab: React.FC = () => {
                                 <div className={styles.bulkActions}>
                                     <button className={styles.btnSmall} style={{ background: '#ccccccff' }} onClick={invertTargetsEnabled}>反転</button>
                                     <button className={styles.btnSmall} style={{ background: '#37ec6aff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allOk')}>全部OKのみ</button>
-                                    <button className={styles.btnSmall} style={{ background: '#12a73cff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
-                                    <button className={styles.btnSmall} style={{ background: '#ec5b37ff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ng1')}>NGが1回以上</button>
+                                    <button className={styles.btnSmall} style={{ background: '#0ea138ff', color: '#ffffff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ok1')}>OKが1回以上</button>
+                                    <button className={styles.btnSmall} style={{ background: '#ed6c4bff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'ng1')}>NGが1回以上</button>
                                     <button className={styles.btnSmall} style={{ background: '#a71212ff', color: '#ffffff' }} onClick={() => setTargetsEnabledByStats(targetStats, 'allNg')}>全部NGのみ</button>
                                     <button
                                         className={`${styles.btnSmall} ${styles.btnDanger}`}
