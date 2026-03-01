@@ -86,9 +86,10 @@ pub fn run() {
         .on_menu_event(|app, event| {
             if event.id == "view_help" {
                 use tauri_plugin_opener::OpenerExt;
-                let _ = app
-                    .opener()
-                    .open_url("https://github.com/kamera25", None::<&str>);
+                let _ = app.opener().open_url(
+                    "https://github.com/kamera25/FxPing/blob/main/assets/howtouse.md",
+                    None::<&str>,
+                );
             }
         })
         .invoke_handler(tauri::generate_handler![
