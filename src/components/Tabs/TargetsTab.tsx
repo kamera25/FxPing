@@ -1,43 +1,27 @@
 import React, { useMemo } from 'react';
-import { Target } from '../../types';
 import styles from './TargetsTab.module.css';
 import { isValidHost } from '../../utils/logic';
+import { useTargetStore } from '../../store/targetStore';
+import { useTargets } from '../../hooks/useTargets';
 
-interface TargetsTabProps {
-    targets: Target[];
-    newTarget: string;
-    setNewTarget: (target: string) => void;
-    newRemarks: string;
-    setNewRemarks: (remarks: string) => void;
-    isInputError: boolean;
-    addTarget: () => void;
-    removeTarget: (host: string) => void;
-    showExPingInput: boolean;
-    setShowExPingInput: (show: boolean) => void;
-    exPingText: string;
-    setExPingText: (text: string) => void;
-    handleExPingApply: () => void;
-    handleTargetListDrop: (e: React.DragEvent) => void;
-    handleDrop: (e: React.DragEvent) => void;
-}
+const TargetsTab: React.FC = () => {
+    const {
+        targets,
+        newTarget, setNewTarget,
+        newRemarks, setNewRemarks,
+        isInputError,
+        showExPingInput, setShowExPingInput,
+        exPingText, setExPingText
+    } = useTargetStore();
 
-const TargetsTab: React.FC<TargetsTabProps> = ({
-    targets,
-    newTarget,
-    setNewTarget,
-    newRemarks,
-    setNewRemarks,
-    isInputError,
-    addTarget,
-    removeTarget,
-    showExPingInput,
-    setShowExPingInput,
-    exPingText,
-    setExPingText,
-    handleExPingApply,
-    handleTargetListDrop,
-    handleDrop
-}) => {
+    const {
+        addTarget,
+        removeTarget,
+        handleExPingApply,
+        handleTargetListDrop,
+        handleDrop
+    } = useTargets();
+
     const isHostValid = useMemo(() => !newTarget || isValidHost(newTarget), [newTarget]);
 
     // Check if any line in exPingText is invalid (ignoring comments)

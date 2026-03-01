@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useStore } from "../store/useStore";
+import { useTargetStore } from "../store/targetStore";
 import { Target } from "../types";
 import { parseExPingText, isValidHost } from "../utils/logic";
 
@@ -12,7 +12,7 @@ export const useTargets = () => {
         setExPingText,
         setShowExPingInput,
         exPingText
-    } = useStore();
+    } = useTargetStore();
 
     const triggerShake = () => {
         setIsInputError(true);

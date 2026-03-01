@@ -28,38 +28,25 @@ import {
 } from "./utils/logic";
 
 // Store & Hooks
-import { useStore } from "./store/useStore";
+import { usePingStore } from "./store/pingStore";
+import { useTargetStore } from "./store/targetStore";
+import { useTraceStore } from "./store/traceStore";
+import { useSettingsStore } from "./store/settingsStore";
+import { useUIStore } from "./store/uiStore";
 import { useSettings } from "./hooks/useSettings";
 import { useTargets } from "./hooks/useTargets";
 import { usePingEngine } from "./hooks/usePingEngine";
 import { useAutoSave } from "./hooks/useAutoSave";
 
 function App() {
-  const {
-    activeTab, setActiveTab,
-    targets,
-    newTarget, setNewTarget,
-    newRemarks, setNewRemarks,
-    results, setResults,
-    targetStats, setTargetStats,
-    traceResults, setTraceResults,
-    isRunActive, setIsRunActive,
-    activeAlert, setActiveAlert,
-    isTracing,
-    traceProtocol,
-    settings, setSettings,
-    currentTime, setCurrentTime,
-    nextPingTimeMs,
-    showSettings, setShowSettings,
-    tableSize, setTableSize,
-    showExPingInput, setShowExPingInput,
-    exPingText, setExPingText,
-    isInputError
-  } = useStore();
+  const { activeTab, setCurrentTime } = useUIStore();
+  const { targets } = useTargetStore();
+  const { results, targetStats, isRunActive } = usePingStore();
+  const { traceResults, setTraceResults } = useTraceStore();
+  const { showSettings } = useSettingsStore();
 
-  const { selectFile, selectDir, playSound, initPlatform, loadSettingsFromIni } = useSettings();
-  const { addTarget, removeTarget, handleExPingApply, handleTargetListDrop, handleDrop, loadDefTargets } = useTargets();
-  const { runTraceRoute, handleProtocolChange } = usePingEngine();
+  const { initPlatform, loadSettingsFromIni } = useSettings();
+  const { loadDefTargets } = useTargets();
   useAutoSave();
 
   useEffect(() => {
@@ -229,84 +216,36 @@ function App() {
 
   return (
     <div className={styles.appContainer}>
-      <Header showSettings={showSettings} setShowSettings={setShowSettings} />
-      <TabBar activeTab={activeTab} setActiveTab={setActiveTab} setShowSettings={setShowSettings} handleSave={handleSave} />
+      <Header />
+      <TabBar handleSave={handleSave} />
 
       <div className={styles.tabContent}>
         {showSettings && (
-          <SettingsModal
-            settings={settings}
-            setSettings={setSettings}
-            setShowSettings={setShowSettings}
-            selectFile={selectFile}
-            selectDir={selectDir}
-            playSound={playSound}
-          />
+          <SettingsModal />
         )}
 
         {!showSettings && activeTab === 'targets' && (
-          <TargetsTab
-            targets={targets}
-            newTarget={newTarget}
-            setNewTarget={setNewTarget}
-            newRemarks={newRemarks}
-            setNewRemarks={setNewRemarks}
-            isInputError={isInputError}
-            addTarget={addTarget}
-            removeTarget={removeTarget}
-            showExPingInput={showExPingInput}
-            setShowExPingInput={setShowExPingInput}
-            exPingText={exPingText}
-            setExPingText={setExPingText}
-            handleExPingApply={handleExPingApply}
-            handleTargetListDrop={handleTargetListDrop}
-            handleDrop={handleDrop}
-          />
+          <TargetsTab />
         )}
 
         {!showSettings && activeTab === 'results' && (
           <ResultsTab
-            isPinging={isRunActive}
-            setIsPinging={(active) => {
-              setIsRunActive(active);
-              useStore.getState().setIsPinging(active);
-            }}
-            results={results}
-            setResults={setResults}
-            setTargetStats={setTargetStats}
             scrollRef={scrollRef}
             handleScroll={handleScroll}
-            tableSize={tableSize}
-            setTableSize={setTableSize}
           />
         )}
 
         {!showSettings && activeTab === 'stats' && (
-          <StatsTab targets={targets} targetStats={targetStats} />
+          <StatsTab />
         )}
 
         {!showSettings && activeTab === 'trace' && (
-          <TraceRouteTab
-            runTraceRoute={runTraceRoute}
-            isTracing={isTracing}
-            traceProtocol={traceProtocol}
-            onProtocolChange={handleProtocolChange}
-            traceResults={traceResults}
-            setTraceResults={setTraceResults}
-            tableSize={tableSize}
-            setTableSize={setTableSize}
-          />
+          <TraceRouteTab />
         )}
       </div>
 
-      <StatsBar
-        targetCount={targets.length}
-        resultCount={results.length}
-        currentTime={currentTime}
-        nextPingTimeMs={nextPingTimeMs}
-        repeatMode={settings.repeatMode}
-      />
-      <AlertOverlay activeAlert={activeAlert} setActiveAlert={setActiveAlert} />
+      <StatsBar />
+      <AlertOverlay />
     </div>
   );
 }

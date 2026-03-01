@@ -2,20 +2,17 @@ import React from 'react';
 import { formatDate } from '../utils/date';
 import styles from './StatsBar.module.css';
 
-interface StatsBarProps {
-    targetCount: number;
-    resultCount: number;
-    currentTime: Date;
-    nextPingTimeMs: number | null;
-    repeatMode: 'parallel' | 'sequential' | 'robin';
-}
+import { useTargetStore } from '../store/targetStore';
+import { usePingStore } from '../store/pingStore';
+import { useUIStore } from '../store/uiStore';
 
-const StatsBar: React.FC<StatsBarProps> = ({
-    targetCount,
-    resultCount,
-    currentTime,
-    nextPingTimeMs
-}) => {
+const StatsBar: React.FC = () => {
+    const { targets } = useTargetStore();
+    const { results, nextPingTimeMs } = usePingStore();
+    const { currentTime } = useUIStore();
+
+    const targetCount = targets.length;
+    const resultCount = results.length;
     const showCountdown = nextPingTimeMs !== null;
 
     return (

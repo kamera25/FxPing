@@ -1,22 +1,19 @@
-import React from 'react';
-import { Settings } from '../../types';
+import { useSettingsStore } from '../../store/settingsStore';
+// No Settings import needed
 import styles from '../SettingsModal.module.css';
 
 interface OKSettingsProps {
-    settings: Settings;
-    setSettings: (settings: Settings) => void;
     selectFile: (type: 'sound' | 'program') => Promise<void>;
     selectDir: (target: 'ok') => Promise<void>;
     playSound: (filePath: string) => Promise<void>;
 }
 
 const OKSettings: React.FC<OKSettingsProps> = ({
-    settings,
-    setSettings,
     selectFile,
     selectDir,
     playSound
 }) => {
+    const { settings, setSettings } = useSettingsStore();
     return (
         <div className={styles.settingsGrid} style={{ gridTemplateColumns: '1fr' }}>
             <div className={styles.settingsSection}>

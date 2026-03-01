@@ -1,27 +1,22 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useStore } from "../store/useStore";
+import { usePingStore } from "../store/pingStore";
+import { useTargetStore } from "../store/targetStore";
+import { useTraceStore } from "../store/traceStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { useUIStore } from "../store/uiStore";
+import { useAlertStore } from "../store/alertStore";
 import { PingResult, Target, TraceResult } from "../types";
 import { updateTargetStats } from "../utils/logic";
 import { useNgDetection } from "./useNgDetection";
 import { useOkDetection } from "./useOkDetection";
 
 export const usePingEngine = () => {
-    const {
-        targets,
-        settings,
-        isPinging,
-        setIsPinging,
-        isRunActive,
-        setIsRunActive,
-        setResults,
-        setTargetStats,
-        setNextPingTimeMs,
-        setIsTracing,
-        setTraceResults,
-        traceProtocol,
-        platform
-    } = useStore();
+    const { setResults, setTargetStats, isPinging, setIsPinging, isRunActive, setIsRunActive, setNextPingTimeMs } = usePingStore();
+    const { targets } = useTargetStore();
+    const { setIsTracing, setTraceResults, traceProtocol } = useTraceStore();
+    const { settings } = useSettingsStore();
+    const { platform } = useUIStore();
 
     const { handleNgDetection } = useNgDetection();
     const { handleOkDetection } = useOkDetection();
@@ -62,10 +57,10 @@ export const usePingEngine = () => {
 
             // Reset suppression stats if notifyOnIntervalOnly is enabled
             if (settings.ng.notifyOnIntervalOnly) {
-                useStore.getState().setTargetNgStats({});
+                useAlertStore.getState().setTargetNgStats({});
             }
             if (settings.ok.notifyOnIntervalOnly) {
-                useStore.getState().setTargetOkStats({});
+                useAlertStore.getState().setTargetOkStats({});
             }
 
             const runPing = async () => {
@@ -197,7 +192,7 @@ export const usePingEngine = () => {
                 return;
             }
         }
-        useStore.getState().setTraceProtocol(proto);
+        useTraceStore.getState().setTraceProtocol(proto);
     };
 
     return {

@@ -1,17 +1,14 @@
 import { useCallback } from "react";
-import { useStore } from "../store/useStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { useAlertStore } from "../store/alertStore";
 import { PingResult } from "../types";
 import { checkNgConditions, checkOkConditions } from "../utils/logic";
 import { useSettings } from "./useSettings";
 import { invoke } from "@tauri-apps/api/core";
 
 export const useNgDetection = () => {
-    const {
-        settings,
-        setTargetNgStats,
-        setTargetOkStats,
-        setActiveAlert
-    } = useStore();
+    const { settings } = useSettingsStore();
+    const { setTargetNgStats, setTargetOkStats, setActiveAlert } = useAlertStore();
     const { playSound } = useSettings();
 
     const handleNgDetection = useCallback(async (newResults: PingResult[]) => {

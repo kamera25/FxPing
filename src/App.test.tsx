@@ -4,7 +4,7 @@ import App from './App';
 
 // Mock Tauri API so tests can run in Node/jsdom
 vi.mock('@tauri-apps/api/core', () => ({
-    invoke: vi.fn(),
+    invoke: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('@tauri-apps/api/event', () => ({

@@ -1,14 +1,13 @@
-import React from 'react';
-import { Settings } from '../../types';
+import { useSettingsStore } from '../../store/settingsStore';
+// No Settings import needed
 import styles from '../SettingsModal.module.css';
 
 interface LogSettingsProps {
-    settings: Settings;
-    setSettings: (settings: Settings) => void;
     selectDir: (target: 'ng' | 'logs') => Promise<void>;
 }
 
-const LogSettings: React.FC<LogSettingsProps> = ({ settings, setSettings, selectDir }) => {
+const LogSettings: React.FC<LogSettingsProps> = ({ selectDir }) => {
+    const { settings, setSettings } = useSettingsStore();
     const getYYMMDD = (date: Date) => {
         const y = String(date.getFullYear()).slice(-2);
         const m = String(date.getMonth() + 1).padStart(2, '0');

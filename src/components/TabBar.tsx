@@ -1,14 +1,15 @@
 import React from 'react';
 import styles from './TabBar.module.css';
+import { useUIStore } from '../store/uiStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 interface TabBarProps {
-    activeTab: string;
-    setActiveTab: (tab: string) => void;
-    setShowSettings: (show: boolean) => void;
     handleSave: () => void;
 }
 
-const TabBar: React.FC<TabBarProps> = ({ activeTab, setActiveTab, setShowSettings, handleSave }) => {
+const TabBar: React.FC<TabBarProps> = ({ handleSave }) => {
+    const { activeTab, setActiveTab } = useUIStore();
+    const { setShowSettings } = useSettingsStore();
     return (
         <div className={styles.tabBar}>
             <div className={styles.tabs}>

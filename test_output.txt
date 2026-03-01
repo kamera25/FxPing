@@ -1,0 +1,41 @@
+
+> fxping@0.1.0 test
+> vitest --run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/kamera25/Desktop/fxping[39m
+
+ [32m✓[39m src/utils/logic.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/store/settingsStore.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [31m❯[39m src/App.test.tsx [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 16[2mms[22m[39m
+[31m     [31m×[31m renders without crashing[39m[32m 16[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/App.test.tsx[2m > [22mApp Component[2m > [22mrenders without crashing
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'catch')[39m
+[36m [2m❯[22m src/App.tsx:[2m137:30[22m[39m
+    [90m135| [39m    // Show the window after the frontend has rendered to avoid white …
+    [90m136| [39m    // We use a custom Rust command to ensure direct access to window …
+    [90m137| [39m    [34minvoke[39m([32m"show_main_window"[39m)[33m.[39m[35mcatch[39m((err) [33m=>[39m {
+    [90m   | [39m                             [31m^[39m
+    [90m138| [39m      console[33m.[39m[34merror[39m([32m"Failed to show window:"[39m[33m,[39m err)[33m;[39m
+    [90m139| [39m    })[33m;[39m
+[90m [2m❯[22m Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:[2m25989:20[22m[39m
+[90m [2m❯[22m runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:[2m874:13[22m[39m
+[90m [2m❯[22m commitHookEffectListMount node_modules/react-dom/cjs/react-dom-client.development.js:[2m13249:29[22m[39m
+[90m [2m❯[22m commitHookPassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:[2m13336:11[22m[39m
+[90m [2m❯[22m commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:[2m15484:13[22m[39m
+[90m [2m❯[22m recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:[2m15439:11[22m[39m
+[90m [2m❯[22m commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:[2m15519:11[22m[39m
+[90m [2m❯[22m flushPassiveEffects node_modules/react-dom/cjs/react-dom-client.development.js:[2m18432:9[22m[39m
+[90m [2m❯[22m node_modules/react-dom/cjs/react-dom-client.development.js:[2m17923:15[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m30 passed[39m[22m[90m (31)[39m
+[2m   Start at [22m 08:59:36
+[2m   Duration [22m 480ms[2m (transform 153ms, setup 0ms, import 238ms, tests 22ms, environment 711ms)[22m
+

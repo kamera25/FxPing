@@ -1,13 +1,8 @@
 import React from 'react';
-import { Settings } from '../../types';
 import styles from '../SettingsModal.module.css';
-
-interface GeneralSettingsProps {
-    settings: Settings;
-    setSettings: (settings: Settings) => void;
-}
-
-const GeneralSettings: React.FC<GeneralSettingsProps> = ({ settings, setSettings }) => {
+import { useSettingsStore } from '../../store/settingsStore';
+const GeneralSettings: React.FC = () => {
+    const { settings, setSettings } = useSettingsStore();
     return (
         <div className={styles.settingsGrid} style={{ gridTemplateColumns: '1fr' }}>
             <label className={styles.checkboxLabel}>

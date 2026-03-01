@@ -1,22 +1,20 @@
 import React from 'react';
-import { Settings } from '../../types';
+import { useSettingsStore } from '../../store/settingsStore';
+// No Settings import needed
 import styles from '../SettingsModal.module.css';
 
 interface NGSettingsProps {
-    settings: Settings;
-    setSettings: (settings: Settings) => void;
     selectFile: (type: 'sound' | 'program') => Promise<void>;
     selectDir: () => Promise<void>;
     playSound: (filePath: string) => Promise<void>;
 }
 
 const NGSettings: React.FC<NGSettingsProps> = ({
-    settings,
-    setSettings,
     selectFile,
     selectDir,
     playSound
 }) => {
+    const { settings, setSettings } = useSettingsStore();
     return (
         <div className={styles.settingsGrid} style={{ gridTemplateColumns: '1fr' }}>
             <label className={styles.checkboxLabel}>

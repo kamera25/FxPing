@@ -2,12 +2,10 @@ import React from 'react';
 import styles from './Header.module.css';
 import logoIcon from '../assets/icon.png';
 
-interface HeaderProps {
-    showSettings: boolean;
-    setShowSettings: (show: boolean) => void;
-}
+import { useSettingsStore } from '../store/settingsStore';
 
-const Header: React.FC<HeaderProps> = ({ showSettings, setShowSettings }) => {
+const Header: React.FC = () => {
+    const { showSettings, setShowSettings } = useSettingsStore();
     return (
         <header className={styles.header}>
             <div className={styles.logo}>

@@ -1,44 +1,30 @@
 import React, { useState } from 'react';
-import { Settings } from '../types';
+import { useSettingsStore } from '../store/settingsStore';
 import GeneralSettings from './settings/GeneralSettings';
 import PingSettings from './settings/PingSettings';
 import LogSettings from './settings/LogSettings';
 import NGSettings from './settings/NGSettings';
 import OKSettings from './settings/OKSettings';
+import { useSettings } from '../hooks/useSettings';
 import styles from './SettingsModal.module.css';
 
-interface SettingsModalProps {
-    settings: Settings;
-    setSettings: (settings: Settings) => void;
-    setShowSettings: (show: boolean) => void;
-    selectFile: (section: 'ng' | 'ok', type: 'sound' | 'program') => Promise<void>;
-    selectDir: (target: 'ng' | 'ok' | 'logs') => Promise<void>;
-    playSound: (filePath: string) => Promise<void>;
-}
+interface SettingsModalProps { }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({
-    settings,
-    setSettings,
-    setShowSettings,
-    selectFile,
-    selectDir,
-    playSound
-}) => {
+const SettingsModal: React.FC = () => {
+    const { selectFile, selectDir, playSound } = useSettings();
     const [settingsTab, setSettingsTab] = useState("ping");
 
     const renderTabContent = () => {
         switch (settingsTab) {
             case 'general':
-                return <GeneralSettings settings={settings} setSettings={setSettings} />;
+                return <GeneralSettings />;
             case 'ping':
-                return <PingSettings settings={settings} setSettings={setSettings} />;
+                return <PingSettings />;
             case 'logs':
-                return <LogSettings settings={settings} setSettings={setSettings} selectDir={() => selectDir('logs')} />;
+                return <LogSettings selectDir={() => selectDir('logs')} />;
             case 'ng':
                 return (
                     <NGSettings
-                        settings={settings}
-                        setSettings={setSettings}
                         selectFile={(type) => selectFile('ng', type)}
                         selectDir={() => selectDir('ng')}
                         playSound={playSound}
@@ -47,8 +33,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             case 'ok':
                 return (
                     <OKSettings
-                        settings={settings}
-                        setSettings={setSettings}
                         selectFile={(type) => selectFile('ok', type)}
                         selectDir={() => selectDir('ok')}
                         playSound={playSound}
@@ -63,7 +47,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className={styles.settingsContainer}>
             <div className={styles.modalHeader}>
                 <h2 className={styles.modalTitle}>設定</h2>
-                <button className={styles.btnSmall} onClick={() => setShowSettings(false)}>閉じる</button>
+                <button className={styles.btnSmall} onClick={() => useSettingsStore.getState().setShowSettings(false)}>閉じる</button>
             </div>
 
             <div className={styles.headerTabs}>

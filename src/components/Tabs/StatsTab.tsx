@@ -2,12 +2,12 @@ import React from 'react';
 import { Target, TargetStats } from '../../types';
 import styles from './StatsTab.module.css';
 
-interface StatsTabProps {
-    targets: Target[];
-    targetStats: Record<string, TargetStats>;
-}
+import { useTargetStore } from '../../store/targetStore';
+import { usePingStore } from '../../store/pingStore';
 
-const StatsTab: React.FC<StatsTabProps> = ({ targets, targetStats }) => {
+const StatsTab: React.FC = () => {
+    const { targets } = useTargetStore();
+    const { targetStats } = usePingStore();
     return (
         <div className={styles.tableContainer}>
             <table className={styles.table}>

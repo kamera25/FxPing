@@ -1,16 +1,14 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useStore } from "../store/useStore";
+import { usePingStore } from "../store/pingStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { useUIStore } from "../store/uiStore";
 import { formatPingResultsCsvRows } from "../utils/logic";
 
 export const useAutoSave = () => {
-    const {
-        results,
-        isRunActive,
-        settings,
-        platform,
-        currentTime
-    } = useStore();
+    const { results, isRunActive } = usePingStore();
+    const { settings } = useSettingsStore();
+    const { platform, currentTime } = useUIStore();
 
     const lastSavedIndexRef = useRef(0);
     const lastSavedPathRef = useRef<string | null>(null);

@@ -1,13 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { Settings } from '../../types';
+import { useSettingsStore } from '../../store/settingsStore';
+// No Settings import needed
 import styles from '../SettingsModal.module.css';
 
-interface PingSettingsProps {
-    settings: Settings;
-    setSettings: (settings: Settings) => void;
-}
+// PingSettingsProps removed as it's no longer used.
 
-const PingSettings: React.FC<PingSettingsProps> = ({ settings, setSettings }) => {
+const PingSettings: React.FC = () => {
+    const { settings, setSettings } = useSettingsStore();
     const firstInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {

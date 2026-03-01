@@ -1,9 +1,11 @@
 import { useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useStore } from "../store/useStore";
+import { useSettingsStore } from "../store/settingsStore";
+import { useUIStore } from "../store/uiStore";
 
 export const useSettings = () => {
-    const { setSettings, setPlatform } = useStore();
+    const { setSettings } = useSettingsStore();
+    const { setPlatform } = useUIStore();
 
     const selectFile = useCallback(async (section: 'ng' | 'ok', type: 'sound' | 'program') => {
         const { open } = await import("@tauri-apps/plugin-dialog");

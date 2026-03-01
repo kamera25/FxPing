@@ -1,28 +1,15 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { TraceResult, TableSize } from '../../types';
+import { useTraceStore } from '../../store/traceStore';
+import { useUIStore } from '../../store/uiStore';
+import { TableSize } from '../../types';
 import styles from './TraceRouteTab.module.css';
 
-interface TraceRouteTabProps {
-    runTraceRoute: () => Promise<void>;
-    isTracing: boolean;
-    traceProtocol: 'ICMP' | 'UDP';
-    onProtocolChange: (proto: 'ICMP' | 'UDP') => Promise<void>;
-    traceResults: TraceResult[];
-    setTraceResults: (results: TraceResult[]) => void;
-    tableSize: TableSize;
-    setTableSize: (size: TableSize) => void;
-}
+import { usePingEngine } from '../../hooks/usePingEngine';
 
-const TraceRouteTab: React.FC<TraceRouteTabProps> = ({
-    runTraceRoute,
-    isTracing,
-    traceProtocol,
-    onProtocolChange,
-    traceResults,
-    setTraceResults,
-    tableSize,
-    setTableSize
-}) => {
+const TraceRouteTab: React.FC = () => {
+    const { runTraceRoute, handleProtocolChange: onProtocolChange } = usePingEngine();
+    const { traceResults, setTraceResults, isTracing, traceProtocol } = useTraceStore();
+    const { tableSize, setTableSize } = useUIStore();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(false);

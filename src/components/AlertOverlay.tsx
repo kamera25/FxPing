@@ -1,12 +1,10 @@
 import React from 'react';
 import styles from './AlertOverlay.module.css';
 
-interface AlertOverlayProps {
-    activeAlert: { target: string, timestamp: string, reason: string } | null;
-    setActiveAlert: (alert: { target: string, timestamp: string, reason: string } | null) => void;
-}
+import { useAlertStore } from '../store/alertStore';
 
-const AlertOverlay: React.FC<AlertOverlayProps> = ({ activeAlert, setActiveAlert }) => {
+const AlertOverlay: React.FC = () => {
+    const { activeAlert, setActiveAlert } = useAlertStore();
     if (!activeAlert) return null;
 
     return (

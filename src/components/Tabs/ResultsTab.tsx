@@ -1,19 +1,14 @@
 import React, { RefObject, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { usePingStore } from '../../store/pingStore';
+import { useUIStore } from '../../store/uiStore';
 import { PingResult, TableSize } from '../../types';
 import styles from './ResultsTab.module.css';
 
 interface ResultsTabProps {
-    isPinging: boolean;
-    setIsPinging: (pinging: boolean) => void;
-    results: PingResult[];
-    setResults: (results: PingResult[]) => void;
-    setTargetStats: (stats: any) => void;
     scrollRef: RefObject<HTMLDivElement | null>;
     handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
-    tableSize: TableSize;
-    setTableSize: (size: TableSize) => void;
 }
 
 const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: TableSize }) => {
@@ -75,16 +70,11 @@ const ResultRow = React.memo(({ res, tableSize }: { res: PingResult, tableSize: 
 });
 
 const ResultsTab: React.FC<ResultsTabProps> = ({
-    isPinging,
-    setIsPinging,
-    results,
-    setResults,
-    setTargetStats,
     scrollRef,
     handleScroll,
-    tableSize,
-    setTableSize
 }) => {
+    const { results, setResults, setTargetStats, isRunActive, setIsRunActive, setIsPinging } = usePingStore();
+    const { tableSize, setTableSize } = useUIStore();
 
     const sizeClass = tableSize === 'xsmall' ? styles.tableXsmall :
         tableSize === 'medium' ? styles.tableMedium :
@@ -94,10 +84,14 @@ const ResultsTab: React.FC<ResultsTabProps> = ({
         <>
             <div className={styles.toolbar}>
                 <button
-                    onClick={() => setIsPinging(!isPinging)}
-                    className={isPinging ? styles.btnStop : styles.btnStart}
+                    onClick={() => {
+                        const next = !isRunActive;
+                        setIsRunActive(next);
+                        setIsPinging(next);
+                    }}
+                    className={isRunActive ? styles.btnStop : styles.btnStart}
                 >
-                    {isPinging ? "■ 停止" : "▶ 開始"}
+                    {isRunActive ? "■ 停止" : "▶ 開始"}
                 </button>
                 <button onClick={() => { setResults([]); setTargetStats({}); }}>履歴クリア</button>
 
