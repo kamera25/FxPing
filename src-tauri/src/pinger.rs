@@ -1,8 +1,5 @@
-use crate::tcpip::hop::Hop;
-use crate::tcpip::host::Host;
-use crate::tcpip::payload_size::PayloadSize;
-use crate::tcpip::rtt::Rtt;
-use crate::tcpip::timeout::Timeout;
+use crate::tcpip::resolve::Resolver;
+use crate::tcpip::{hop::Hop, host::Host, payload_size::PayloadSize, rtt::Rtt, timeout::Timeout};
 use crate::FxPingError;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
@@ -34,7 +31,7 @@ impl Pinger {
         payload_size: PayloadSize,
         ttl: Hop,
     ) -> Result<Self, FxPingError> {
-        let ip = crate::resolve::resolve_host(&target.to_string())?;
+        let ip = target.resolve()?;
 
         Ok(Self {
             target,

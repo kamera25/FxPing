@@ -4,7 +4,6 @@ pub mod commands;
 mod error;
 mod ini_settings;
 mod pinger;
-mod resolve;
 mod tcpip;
 mod tracer;
 

@@ -2,6 +2,7 @@ use crate::tcpip::hop::Hop;
 use crate::tcpip::host::Host;
 use crate::tcpip::rtt::Rtt;
 use crate::tcpip::timeout::Timeout;
+use crate::tcpip::resolve::Resolver;
 use crate::tracer::{TraceFuture, TraceHop, TracerImpl};
 use std::net::IpAddr;
 use std::str::FromStr;
@@ -232,7 +233,7 @@ fn parse_line_to_hop(line: &str, target_host: &Host, resolve_hostnames: bool) ->
             }
 
             let fqdn = if resolve_hostnames {
-                hop_ip.and_then(|addr| crate::resolve::resolve_addr(&addr))
+                hop_ip.and_then(|addr| addr.reverse_resolve())
             } else {
                 None
             };

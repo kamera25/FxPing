@@ -1,7 +1,7 @@
 mod icmp;
 mod udp;
 
-use crate::tcpip::hop::Hop;
+use crate::tcpip::{hop::Hop, resolve::Resolver};
 use crate::tcpip::host::Host;
 use crate::tcpip::payload_size::PayloadSize;
 use crate::tcpip::protocol::Protocol;
@@ -59,7 +59,7 @@ impl Tracer {
         protocol: Protocol,
         resolve_hostnames: bool,
     ) -> Result<Self, FxPingError> {
-        let ip = crate::resolve::resolve_host(&target.to_string())?;
+        let ip = target.resolve()?;
 
         let inner: Box<dyn TracerImpl> = if protocol.is_icmp() {
             Box::new(ICMPTracer::new(
