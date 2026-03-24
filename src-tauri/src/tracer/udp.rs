@@ -171,7 +171,7 @@ impl TracerImpl for UDPTracer {
                         }
 
                         let fqdn = if resolve_hostnames {
-                            hop_ip.and_then(|addr| crate::resolve::resolve_addr(&addr))
+                            hop_ip.and_then(|addr| addr.reverse_resolve().ok().map(|h| h.to_string()))
                         } else {
                             None
                         };
@@ -233,7 +233,7 @@ fn parse_line_to_hop(line: &str, target_host: &Host, resolve_hostnames: bool) ->
             }
 
             let fqdn = if resolve_hostnames {
-                hop_ip.and_then(|addr| addr.reverse_resolve())
+                hop_ip.and_then(|addr| addr.reverse_resolve().ok().map(|h| h.to_string()))
             } else {
                 None
             };

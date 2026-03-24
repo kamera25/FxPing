@@ -37,9 +37,30 @@ impl Resolver for Host {
         }
     }
 
-    fn reverse_resolve(&self) -> Result<String, FxPingError> {
-        let host = self.to_string();
-        dns_lookup::lookup_addr(&host)
+    fn reverse_resolve(&self) -> Result<Host, FxPingError> {
+        let host_str = self.to_string();
+        // If it's already a hostname (not an IP), just return it
+        if let Ok(ip) = host_str.parse::<IpAddr>() {
+            ip.reverse_resolve()
+        } else {
+            Ok(self.clone())
+        }
+    }
+}
+
+impl Resolver for IpAddr {
+    fn resolve(&self) -> Result<IpAddr, FxPingError> {
+        Ok(*self)
+    }
+
+    fn reverse_resolve(&self) -> Result<Host, FxPingError> {
+        match dns_lookup::lookup_addr(self) {
+            Ok(name) => Host::new(&name),
+            Err(e) => Err(FxPingError::DnsResolution {
+                target: self.to_string(),
+                source: e,
+            }),
+        }
     }
 }
 
@@ -53,10 +74,10 @@ mod tests {
     #[test]
     fn test_resolve_addr_localhost() {
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-        let result = resolve_addr(&ip);
+        let result = ip.reverse_resolve();
         // On many systems this returns "localhost" or similar
         // but it's not guaranteed, so we just check if it returns.
-        // It's okay if it's None in some environments.
+        // It's okay if it's an error in some environments (e.g. no DNS).
         println!("Reverse resolve 127.0.0.1: {:?}", result);
     }
 

@@ -61,12 +61,13 @@ impl TracerImpl for ICMPTracer {
                     .await
                 {
                     Ok((packet, duration)) => {
-                        let hop_ip = match packet {
+                        let hop_ip: IpAddr = match packet {
                             surge_ping::IcmpPacket::V4(p) => p.get_real_dest().into(),
                             surge_ping::IcmpPacket::V6(p) => p.get_real_dest().into(),
                         };
+                        use crate::tcpip::resolve::Resolver;
                         let fqdn = if self.resolve_hostnames {
-                            &hop_ip.reverse_resolve().ok()
+                            hop_ip.reverse_resolve().ok().map(|h| h.to_string())
                         } else {
                             None
                         };
